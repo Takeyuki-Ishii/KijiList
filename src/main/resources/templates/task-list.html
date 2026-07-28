@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html xmlns:th="http://thymeleaf.org">
+<head th:replace="~{layout/base :: header('タスク一覧')}"></head>
+<body class="bg-light">
+
+<!-- ★★★ <body>の直後にこの1行を追加 ★★★ -->
+    <nav th:replace="~{layout/base :: nav}"></nav>
+
+<!-- ※既存の mt-5（マージントップ5）は、ナビゲーションバーとの間隔が開きすぎるため mt-2 などに縮めると綺麗です -->
+    <div class="container mt-2" style="max-width: 600px;">
+    <h1 class="text-center mb-4 text-primary">タスク一覧管理</h1>
+
+    <!-- 入力フォームカードの部分を以下のように差し替えます -->
+    <div class="card p-4 shadow-sm mb-4">
+        <!-- ★ th:object="${task}" を追加してコントローラーのモデルと紐付け -->
+        <form th:action="@{/add-task}" th:object="${task}" method="post" novalidate>
+
+            <!-- タスク名の入力欄 -->
+            <div class="mb-3">
+                <label class="form-label fw-bold">新しいタスク</label>
+                <!-- ★ name="newTask" から th:field="*{name}" に変更 -->
+                <input type="text" th:field="*{name}"
+                       th:classappend="${#fields.hasErrors('name')} ? 'is-invalid' : ''"
+                       class="form-control" placeholder="例：牛乳を買う">
+                <!-- ★ エラーメッセージ表示エリア -->
+                <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}">
+                    タスク名のエラーメッセージ
+                </div>
+            </div>
+
+            <!-- 優先度（重要度）プルダウン項目 -->
+            <div class="mb-3">
+                <label class="form-label fw-bold">重要度</label>
+                <select th:field="*{priority}" class="form-select">
+                    <option value="低">低</option>
+                    <option value="中" selected>中</option> <!-- 初期選択を"中"にする -->
+                    <option value="高">高</option>
+                </select>
+            </div>
+            <!-- 期限の入力欄 -->
+            <div class="mb-3">
+                <label class="form-label fw-bold">期限</label>
+                <!-- ★ name="deadline" から th:field="*{deadline}" に変更 -->
+                <input type="date" th:field="*{deadline}"
+                       th:classappend="${#fields.hasErrors('deadline')} ? 'is-invalid' : ''"
+                       class="form-control">
+                <!-- ★ エラーメッセージ表示エリア -->
+                <div class="invalid-feedback" th:if="${#fields.hasErrors('deadline')}" th:errors="*{deadline}">
+                    期限のエラーメッセージ
+                </div>
+            </div>
+
+
+            <button type="submit" class="btn btn-primary w-100 fw-bold">タスクを追加する</button>
+        </form>
+    </div>
+    <h3 class="mb-3">現在のタスク</h3>
+    <ul class="list-group shadow-sm">
+        <li th:each="task : ${tasks}" class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+                <!-- ★ タスク名の文字色制御 -->
+                <span class="fw-bold"
+                      th:text="${task.name}"
+                      th:classappend="${task.completed} ? 'text-decoration-line-through text-muted' : (${task.deadline == T(java.time.LocalDate).now()} ? 'text-danger fw-bolder' : (${task.deadline.isAfter(T(java.time.LocalDate).now()) && (task.deadline.isBefore(T(java.time.LocalDate).now().plusDays(4)))} ? 'text-warning' : ''))">
+                    タスク名
+                </span>
+
+
+                <!-- ★ バッジの色制御 -->
+                <span class="badge ms-2"
+                      th:text="${task.deadline}"
+                      th:classappend="${task.deadline == T(java.time.LocalDate).now()} ? 'bg-danger' : (${task.deadline.isAfter(T(java.time.LocalDate).now()) && (task.deadline.isBefore(T(java.time.LocalDate).now().plusDays(4)))} ? 'bg-warning text-dark' : 'bg-secondary')">
+                2026-01-01
+                </span>
+                <span class="badge ms-1"
+                      th:text="${task.priority}"
+                      th:classappend="${task.priority == '高'} ? 'bg-danger' : (${task.priority == '中'} ? 'bg-info text-dark' : 'bg-light text-dark border')">中
+                </span>
+            </div>
+
+            <div class="d-flex align-items-center">
+                <!-- ★ 編集画面へ遷移するリンクボタンを追加 -->
+                <a th:href="@{/edit-task/{id}(id=${task.id})}" class="btn btn-outline-primary btn-sm me-2">編集</a>
+
+                <!-- 未完了の場合のみ「完了」ボタンを表示 -->
+                <form th:if="${!task.completed}" th:action="@{/complete-task/{id}(id=${task.id})}" method="post" style="display:inline;">
+                    <button type="submit" class="btn btn-sm btn-success">完了</button>
+                </form>
+
+                <form th:action="@{/delete-task/{id}(id=${task.id})}" method="post" class="m-0">
+                    <!-- name を taskId から id に変更 -->
+                    <input type="hidden" name="id" th:value="${task.id}">
+                    <button type="submit" class="btn btn-outline-danger btn-sm">完了（削除）</button>
+                </form>
+            </div>
+        </li>
+    </ul>
+
+</div>
+
+</body>
+</html>

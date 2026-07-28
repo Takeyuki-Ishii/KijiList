@@ -1,0 +1,64 @@
+<!-- task-edit.html (上部のみ抜粋) -->
+<!DOCTYPE html>
+<html xmlns:th="http://thymeleaf.org">
+<head th:replace="~{layout/base :: header('タスク編集')}"></head>
+<body class="bg-light">
+
+<!-- ★★★ <body>の直後にこの1行を追加 ★★★ -->
+<nav th:replace="~{layout/base :: nav}"></nav>
+
+<div class="container mt-2" style="max-width: 600px;">
+
+    <h1 class="text-center mb-4 text-primary">タスクの編集</h1>
+
+    <div class="card p-4 shadow-sm mb-4">
+        <!-- ★ 送信先を更新用URL（/update-task/ID）に設定 -->
+        <form th:action="@{/update-task/{id}(id=${task.id})}" th:object="${task}" method="post" novalidate>
+
+            <!-- タスク名の入力欄（最初から現在の値が入ります） -->
+            <div class="mb-3">
+                <label class="form-label fw-bold">タスク名</label>
+                <input type="text" th:field="*{name}"
+                       th:classappend="${#fields.hasErrors('name')} ? 'is-invalid' : ''"
+                       class="form-control">
+                <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}">
+                    タスク名のエラーメッセージ
+                </div>
+            </div>
+
+            <!-- 優先度（重要度）プルダウン項目 -->
+            <div class="mb-3">
+                <label for="priority" class="form-label fw-bold">重要度</label>
+                <!-- th:fieldがあるため、th:selectedは不要になります -->
+                <select th:field="*{priority}" id="priority" class="form-control"
+                        th:classappend="${#fields.hasErrors('priority')} ? 'is-invalid' : ''">
+                    <option value="高">高</option>
+                    <option value="中">中</option>
+                    <option value="低">低</option>
+                </select>
+                <div class="invalid-feedback" th:if="${#fields.hasErrors('priority')}" th:errors="*{priority}">
+                    重要度のエラーメッセージ
+                </div>
+            </div>
+            <!-- 期限の入力欄（最初から現在の値が入ります） -->
+            <div class="mb-3">
+                <label class="form-label fw-bold">期限</label>
+                <input type="date" th:field="*{deadline}"
+                       th:classappend="${#fields.hasErrors('deadline')} ? 'is-invalid' : ''"
+                       class="form-control">
+                <div class="invalid-feedback" th:if="${#fields.hasErrors('deadline')}" th:errors="*{deadline}">
+                    期限のエラーメッセージ
+                </div>
+            </div>
+
+            <!-- ボタンエリア -->
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-success w-50 fw-bold">更新する</button>
+                <a th:href="@{/tasks}" class="btn btn-secondary w-50 fw-bold">キャンセル</a>
+            </div>
+        </form>
+    </div>
+
+</div>
+</body>
+</html>

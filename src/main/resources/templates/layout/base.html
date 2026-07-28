@@ -1,0 +1,28 @@
+<!-- src/main/resources/templates/layout/base.html -->
+<!DOCTYPE html>
+<html xmlns:th="http://thymeleaf.org">
+<head th:fragment="header(title)">
+    <meta charset="UTF-8">
+    <title th:text="${title}">共通タイトル</title>
+    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+</head>
+<body>
+
+<!-- ★★★ ここから追加：ナビゲーションバーの部品化 ★★★ -->
+<nav th:fragment="nav" class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm mb-4">
+    <div class="container">
+        <!-- アプリのロゴ（クリックすると一覧に戻る） -->
+        <a class="navbar-brand fw-bold" th:href="@{/tasks}">📅 タスク管理アプリ</a>
+
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <!-- 一覧へのリンク -->
+                    <a class="nav-link active" th:href="@{/tasks}">タスク一覧</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+</body>
+</html>

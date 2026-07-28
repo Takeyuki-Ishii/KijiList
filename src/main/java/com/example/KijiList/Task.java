@@ -1,0 +1,70 @@
+package com.example.KijiList;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.validation.constraints.FutureOrPresent;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import java.time.LocalDate;
+
+@Entity
+public class Task {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    // ★タスク名：空文字やスペースのみを禁止する
+    @NotBlank(message = "タスク名を入力してください")
+    private String name;
+
+    // ★期限：StringからLocalDateに変更し、未入力禁止 ＋ 今日以降のみ許可
+    @NotNull(message = "期限を入力してください")
+    @FutureOrPresent(message = "期限には今日以降の日付を指定してください")
+    private LocalDate deadline;
+
+    // 完了フラグ（初期値は未完了の false）
+    private boolean completed = false;
+
+    // 重要度（"高", "中", "低" のいずれかの文字列が入る）
+    private String priority;
+
+    public Task() {
+    }
+
+    // ★コンストラクタの引数もLocalDateに変更
+    public Task(String name, LocalDate deadline) {
+        this.name = name;
+        this.deadline = deadline;
+    }
+
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+
+    // ★Getter/SetterもLocalDateに変更
+    public LocalDate getDeadline() { return deadline; }
+    public void setDeadline(LocalDate deadline) { this.deadline = deadline; }
+
+    // ゲッター・セッターを追加
+    public boolean isCompleted() {
+        return completed;
+    }
+
+    public void setCompleted(boolean completed) {
+        this.completed = completed;
+    }
+
+    // ゲッター・セッターを追加
+    public String getPriority() {
+        return priority;
+    }
+
+    public void setPriority(String priority) {
+        this.priority = priority;
+    }
+}

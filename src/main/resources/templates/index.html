@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html xmlns:th="http://thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>マイホームページ</title>
+    <!-- 画面を綺麗にするためのBootstrap（CSS）を読み込みます -->
+    <link href="https://jsdelivr.net" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<!-- ナビゲーションバー（上部のメニュー） -->
+<nav class="navbar navbar-dark bg-dark mb-4">
+    <div class="container-fluid">
+        <span class="navbar-brand mb-0 h1">Spring Boot アプリ</span>
+    </div>
+</nav>
+
+<!-- メインコンテンツ -->
+<div class="container text-center py-5">
+    <div class="card shadow-sm p-4 mx-auto" style="max-width: 500px;">
+        <h1 class="text-primary mb-3">Hello, Thymeleaf!</h1>
+        <!-- Controllerから届いたメッセージをここに表示します -->
+        <p class="fs-5" th:text="${message}">ここにJavaからの文字が入ります</p>
+        <button class="btn btn-success mt-3">詳細を見る</button>
+    </div>
+</div>
+
+</body>
+</html>
