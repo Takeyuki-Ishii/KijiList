@@ -27,7 +27,25 @@ public class TaskService {
             return taskRepository.findAllByOrderByDeadlineAsc();
         }
     }
+    public List<Task> getFilteredAndSortedTasks(String filter, String sort) {
+        // 1. 「未完了のみ(active)」または「完了のみ(completed)」で絞り込む場合
+        if ("active".equals(filter) || "completed".equals(filter)) {
+            boolean completedStatus = "completed".equals(filter); // completedならtrue、activeならfalse
 
+            if ("priority".equals(sort)) {
+                return taskRepository.findAllByCompletedPrioritized(completedStatus);
+            } else {
+                return taskRepository.findAllByCompletedOrderByDeadlineAsc(completedStatus);
+            }
+        }
+
+        // 2. 「すべて(all)」の場合は、前回のソートロジックをそのまま使う
+        if ("priority".equals(sort)) {
+            return taskRepository.findAllPrioritizedTasks();
+        } else {
+            return taskRepository.findAllByOrderByDeadlineAsc();
+        }
+    }
     // タスクを保存・更新する
     public void saveTask(Task task) {
         taskRepository.save(task);

@@ -26,17 +26,16 @@ public class TaskController {
     @GetMapping("/tasks")
     public String listTasks(
             @RequestParam(name = "sort", required = false, defaultValue = "deadline") String sort,
+            @RequestParam(name = "filter", required = false, defaultValue = "all") String filter, // 💡 追加
             Model model) {
 
-        // 1. ソートに応じたタスク一覧を取得して渡す（実装済み）
-        List<Task> tasks = taskService.getTasks(sort);
+        // 💡 Serviceの新しいメソッドに2つの条件を渡す
+        List<Task> tasks = taskService.getFilteredAndSortedTasks(filter, sort);
+
         model.addAttribute("tasks", tasks);
-
-        // 2. 現在のソート状態を渡す（実装済み）
         model.addAttribute("currentSort", sort);
-
-        // 3. 【追加！】入力フォーム用の空のオブジェクトを渡す
-        model.addAttribute("task", new Task()); // これが抜けていたためエラーが起きていました！
+        model.addAttribute("currentFilter", filter); // 💡 現在のフィルター状態を画面に送る
+        model.addAttribute("task", new Task()); // 前回のWhitelabelエラー対策の1行
 
         return "task-list";
     }
