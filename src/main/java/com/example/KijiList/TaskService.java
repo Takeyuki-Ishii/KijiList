@@ -1,4 +1,5 @@
 package com.example.KijiList;
+
 import org.springframework.stereotype.Service;
 import java.util.List;
 
@@ -14,7 +15,17 @@ public class TaskService {
 
     // 全てのタスクを取得する
     public List<Task> getAllTasks() {
-        return taskRepository.findAllByOrderByDeadlineAsc();
+        // 以前の findAllByOrderByDeadlineAsc() から変更します
+        return taskRepository.findAllPrioritizedTasks();
+    }
+
+    // タスクを並び変えて取得する
+    public List<Task> getTasks(String sort) {
+        if ("priority".equals(sort)) {
+            return taskRepository.findAllPrioritizedTasks();
+        } else {
+            return taskRepository.findAllByOrderByDeadlineAsc();
+        }
     }
 
     // タスクを保存・更新する

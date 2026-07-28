@@ -5,7 +5,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 
 import jakarta.validation.Valid; // ★追加
+import java.util.List;
 import org.springframework.validation.BindingResult; // ★追加
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ModelAttribute; // ★追加
 import org.springframework.web.bind.annotation.PathVariable; // ★追加
 
@@ -22,9 +24,20 @@ public class TaskController {
 
     // 1.タスク一覧を表示する
     @GetMapping("/tasks")
-    public String viewTasks(Model model) {
-        model.addAttribute("tasks", taskService.getAllTasks());
-        model.addAttribute("task", new Task());
+    public String listTasks(
+            @RequestParam(name = "sort", required = false, defaultValue = "deadline") String sort,
+            Model model) {
+
+        // 1. ソートに応じたタスク一覧を取得して渡す（実装済み）
+        List<Task> tasks = taskService.getTasks(sort);
+        model.addAttribute("tasks", tasks);
+
+        // 2. 現在のソート状態を渡す（実装済み）
+        model.addAttribute("currentSort", sort);
+
+        // 3. 【追加！】入力フォーム用の空のオブジェクトを渡す
+        model.addAttribute("task", new Task()); // これが抜けていたためエラーが起きていました！
+
         return "task-list";
     }
 
@@ -67,8 +80,7 @@ public class TaskController {
     @PostMapping("/update-task/{id}")
     public String updateTask(@PathVariable("id") Long id,
                              @Valid @ModelAttribute("task") Task task,
-                             BindingResult bindingResult,
-                             Model model) {
+                             BindingResult bindingResult) {
 
         // バリデーションエラーがあった場合は、編集画面に戻す
         if (bindingResult.hasErrors()) {
