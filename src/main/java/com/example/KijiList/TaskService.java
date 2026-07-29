@@ -68,4 +68,21 @@ public class TaskService {
     public void deleteTask(Long id) {
         taskRepository.deleteById(id);
     }
+
+    // タスクの取得
+    public List<Task> getTasks(String keyword, String filter, String sort) {
+        // キーワードが空文字またはスペースのみの場合はNULLにしてSQLの判定をスキップさせる
+        String searchKeyword = (keyword != null && !keyword.trim().isEmpty()) ? keyword.trim() : null;
+
+        // フィルター文字列をBooleanに変換（昨日までの実装を想定）
+        Boolean isCompleted = null;
+        if ("uncompleted".equals(filter)) {
+            isCompleted = false;
+        } else if ("completed".equals(filter)) {
+            isCompleted = true;
+        }
+
+        // デフォルトのソート順を設定
+        return taskRepository.findByKeywordAndStatusAndSort(searchKeyword, isCompleted, sort);
+    }
 }

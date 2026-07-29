@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html xmlns:th="http://thymeleaf.org">
-<head th:replace="~{layout/base :: header('タスク一覧')}"></head>
+<head th:replace="~{layout/base :: header('一覧管理')}"></head>
 <body class="bg-light">
 
 <!-- ★★★ <body>の直後にこの1行を追加 ★★★ -->
@@ -50,39 +50,57 @@
                 </div>
             </div>
 
+            <button type="submit" class="btn btn-primary w-100 mb-4">タスクを追加する</button>
+        </form>
+        <!-- 「タスクを追加する」ボタンの修正（mb-4 を追加） -->
+        <!-- 検索フォームの修正（btn-secondary に変更） -->
+        <form th:action="@{/tasks}" method="get" class="row g-2 mb-3">
+            <!-- （hiddenタグ等はそのまま） -->
+            <input type="hidden" name="filter" th:value="${currentFilter}">
+            <input type="hidden" name="sort" th:value="${currentSort}">
 
-            <button type="submit" class="btn btn-primary w-100 fw-bold">タスクを追加する</button>
+            <div class="col-auto">
+                <input type="text" name="keyword" th:value="${currentKeyword}" class="form-control" placeholder="タスクを検索...">
+            </div>
+            <div class="col-auto">
+                <!-- 色を btn-secondary (グレー) に変更 -->
+                <button type="submit" class="btn btn-secondary">検索</button>
+                <!-- 検索クリアボタン（キーワードだけを消して現在のソート・フィルターは維持） -->
+                <a th:href="@{/tasks(filter=${currentFilter}, sort=${currentSort})}"
+                   class="btn btn-outline-secondary" th:if="${currentKeyword != null && !currentKeyword.isEmpty()}">クリア</a>
+            </div>
         </form>
     </div>
+
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h2 class="text-secondary">タスク一覧</h2>
+            <h2 class="text-secondary">一覧</h2>
             <!-- 💡 ソート切り替えボタンエリア -->
             <div class="btn-group" role="group" aria-label="Sort options">
                 <!-- 期限順ボタン -->
-                <a th:href="@{/tasks(sort='deadline', filter=${currentFilter})}"
+                <a th:href="@{/tasks(sort='deadline', filter=${currentFilter}, keyword=${currentKeyword})}"
                    th:classappend="${currentSort == 'deadline'} ? 'btn-success' : 'btn-outline-success'"
                    class="btn fw-bold">📅 期限が近い順</a>
 
                 <!-- 重要度順ボタン -->
-                <a th:href="@{/tasks(sort='priority', filter=${currentFilter})}"
-                   th:classappend="${currentSort == 'priority'} ? 'btn-success' : 'btn-outline-success'"
-                   class="btn fw-bold">🔥 重要度順</a>
+                <a th:href="@{/tasks(filter=${currentFilter}, sort='priority', keyword=${currentKeyword})}"
+                   th:classappend="${currentSort == 'priority'} ? 'active' : ''"
+                   class="btn btn-outline-dark btn-sm">🔥 重要度順</a>
             </div>
         </div>
         <div class="mb-3">
             <div class="btn-group" role="group" aria-label="Filter options">
                 <!-- すべてボタン -->
-                <a th:href="@{/tasks(filter='all', sort=${currentSort})}"
+                <a th:href="@{/tasks(filter='all', sort=${currentSort}, keyword=${currentKeyword})}"
                    th:classappend="${currentFilter == 'all'} ? 'btn-primary' : 'btn-outline-primary'"
                    class="btn btn-sm fw-bold">全て</a>
 
-                <!-- 未完了ボタン -->
-                <a th:href="@{/tasks(filter='active', sort=${currentSort})}"
-                   th:classappend="${currentFilter == 'active'} ? 'btn-primary' : 'btn-outline-primary'"
-                   class="btn btn-sm fw-bold">未完了</a>
+                <!-- 未完了のみボタン -->
+                <a th:href="@{/tasks(filter='uncompleted', sort=${currentSort}, keyword=${currentKeyword})}"
+                   th:classappend="${currentFilter == 'uncompleted'} ? 'active' : ''" class="btn btn-outline-dark btn-sm">
+                    未完了のみ</a>
 
                 <!-- 完了ボタン -->
-                <a th:href="@{/tasks(filter='completed', sort=${currentSort})}"
+                <a th:href="@{/tasks(filter='completed', sort=${currentSort}, keyword=${currentKeyword})}"
                    th:classappend="${currentFilter == 'completed'} ? 'btn-primary' : 'btn-outline-primary'"
                    class="btn btn-sm fw-bold">完了済み</a>
             </div>
@@ -96,7 +114,6 @@
                       th:classappend="${task.completed} ? 'text-decoration-line-through text-muted' : (${task.deadline == T(java.time.LocalDate).now()} ? 'text-danger fw-bolder' : (${task.deadline.isAfter(T(java.time.LocalDate).now()) && (task.deadline.isBefore(T(java.time.LocalDate).now().plusDays(4)))} ? 'text-warning' : ''))">
                     タスク名
                 </span>
-
 
                 <!-- ★ バッジの色制御 -->
                 <span class="badge ms-2"
@@ -112,17 +129,19 @@
 
             <div class="d-flex align-items-center">
                 <!-- ★ 編集画面へ遷移するリンクボタンを追加 -->
-                <a th:href="@{/edit-task/{id}(id=${task.id})}" class="btn btn-outline-primary btn-sm me-2">編集</a>
+                <a th:href="@{/tasks/{id}/edit(id=${task.id}, keyword=${currentKeyword}, filter=${currentFilter}, sort=${currentSort})}"
+                   class="btn btn-sm btn-outline-primary">編集</a>
 
                 <!-- 未完了の場合のみ「完了」ボタンを表示 -->
-                <form th:if="${!task.completed}" th:action="@{/complete-task/{id}(id=${task.id})}" method="post" style="display:inline;">
+                <form th:if="${!task.completed}"
+                      th:action="@{/complete-task/{id}(id=${task.id}, keyword=${currentKeyword}, filter=${currentFilter}, sort=${currentSort})}" method="post" style="display:inline;">
                     <button type="submit" class="btn btn-sm btn-success">完了</button>
                 </form>
 
-                <form th:action="@{/delete-task/{id}(id=${task.id})}" method="post" class="m-0">
-                    <!-- name を taskId から id に変更 -->
-                    <input type="hidden" name="id" th:value="${task.id}">
-                    <button type="submit" class="btn btn-outline-danger btn-sm">完了（削除）</button>
+                <form th:action="@{/delete-task/{id}(id=${task.id}, keyword=${currentKeyword}, filter=${currentFilter}, sort=${currentSort})}"
+                      method="post">
+                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('本当に削除しますか？')">
+                    <input type="hidden" name="id" th:value="${task.id}">完了（削除）</button>
                 </form>
             </div>
         </li>
