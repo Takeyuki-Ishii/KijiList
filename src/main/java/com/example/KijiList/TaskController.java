@@ -1,6 +1,8 @@
 package com.example.KijiList;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 
@@ -27,42 +29,62 @@ public class TaskController {
     // 1.タスク一覧を表示する
     @GetMapping("/tasks")
     public String listTasks(
-            @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(value = "filter", defaultValue = "all") String filter,
             @RequestParam(value = "sort", defaultValue = "deadline") String sort,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(value = "keyword", required = false, defaultValue = "") String keyword,
             Model model) {
 
-        // 条件に合うタスク一覧を取得
-        List<Task> tasks = taskService.getTasks(keyword, filter, sort);
+        // ServiceからPageオブジェクトを取得
+        Page<Task> taskPage = taskService.getTasks(page, filter, keyword, sort);
 
-        // 画面描画用データのセット
-        model.addAttribute("tasks", tasks);
+        // Thymeleafに渡すデータをモデルに格納
+        model.addAttribute("taskPage", taskPage);                // Pageオブジェクトごと渡す
+        model.addAttribute("taskList", taskPage.getContent());    // ループ用（現在のページのタスクリスト）
 
-        // 【重要】現在の状態をすべてViewに渡す（URLパラメータの維持に必須）
+        // 現在の条件をURLパラメータ維持のためにモデルに保持
+        model.addAttribute("currentPage", page);
+        model.addAttribute("currentStatus", filter);
+        model.addAttribute("currentSortType", sort);
         model.addAttribute("currentKeyword", keyword);
-        model.addAttribute("currentFilter", filter);
-        model.addAttribute("currentSort", sort);
         // ※昨日までの実装で「task」以外の名前（例: taskForm）にしている場合はその名前に合わせてください
         model.addAttribute("task", new Task());
-        return "task-list"; // タスク一覧のHTML名
+        return "task-list"; // 一覧画面のHTML名
     }
 
     // 2.タスクを追加する
     @PostMapping("/add-task")
-    public String addTask(@Valid @ModelAttribute("task") Task task, // ★@Validでチェック、オブジェクトで受け取る
-                          BindingResult bindingResult,            // ★エラー結果が入る箱（※Taskの直後に配置が必須）
-                          Model model) {
+    public String addTask(
+            @Validated @ModelAttribute("task") Task task, // @Validatedや@Validがついている箇所
+            BindingResult bindingResult,
+            Model model,
+            // 現在のページネーションや検索状態も維持するために引数で受け取る
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "ALL") String filter,
+            @RequestParam(defaultValue = "") String keyword,
+            @RequestParam(defaultValue = "deadline") String sort) {
 
-        // ★もし入力エラー（バリデーション違反）があった場合
+        // 1. バリデーションエラーを検知した場合
         if (bindingResult.hasErrors()) {
-            // エラー表示を残したまま一覧画面を再表示するため、現在のリストを再度詰め直す
-            model.addAttribute("tasks", taskService.getAllTasks());
-            return "task-list"; // リダイレクトではなく、直接HTMLを表示してエラーを出す
+
+            // ★ココが重要！画面を再表示するために、一覧データ（5件分）をもう一度Modelに詰め直す
+            Page<Task> taskPage = taskService.getTasks(page, filter, keyword, sort);
+            model.addAttribute("taskPage", taskPage);
+            model.addAttribute("taskList", taskPage.getContent());
+
+            // URLパラメータ維持のためのデータも詰め直す
+            model.addAttribute("currentPage", page);
+            model.addAttribute("currentStatus", filter);
+            model.addAttribute("currentSortType", sort);
+            model.addAttribute("currentKeyword", keyword);
+
+            // 保存（service.save）は呼び出さずに、そのまま入力画面（一覧画面）を返す
+            return "task-list";
         }
 
-        // エラーがなければデータベースに保存
-        taskService.saveTask(task);
-        return "redirect:/tasks";
+        // 2. エラーがなければ正常に保存してリダイレクト
+        taskService.saveTask(task); // お使いの保存メソッド
+        return "redirect:/tasks?page=" + page + "&filter=" + filter + "&sort=" + sort + "&keyword=" + keyword;
     }
 
     // 3.タスクを削除する
@@ -103,28 +125,36 @@ public class TaskController {
     // 5. タスクを更新する
     @PostMapping("/update-task/{id}")
     public String updateTask(
-            @PathVariable("id") Long id,
-            @ModelAttribute("task") Task task, // バリデーションがある場合は @Validated や BindingResult もここにあります
-            @RequestParam(value = "keyword", required = false) String keyword,
-            @RequestParam(value = "filter", required = false) String filter,
-            @RequestParam(value = "sort", required = false) String sort,
-            RedirectAttributes redirectAttributes,
-            BindingResult bindingResult) {
+            @PathVariable Long id,
+            @Validated @ModelAttribute("task") Task task, // @Validated がついているか確認
+            BindingResult bindingResult,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "all") String filter,
+            @RequestParam(defaultValue = "") String keyword,
+            @RequestParam(defaultValue = "deadline") String sort,
+            Model model) {
 
-        // バリデーションエラーがあった場合は、編集画面に戻す
+        // 1. バリデーションエラー（空欄など）を検知した場合
         if (bindingResult.hasErrors()) {
+            // 重要度の選択肢（高・中・低）などをモデルに再格納する必要があればここに記述します
+            // 例：model.addAttribute("priorities", List.of("高", "中", "低"));
+
+            // URLパラメータ（検索・ソート・フィルター状態）を画面の「キャンセル」ボタン等に引き継ぐためにModelに保持
+            model.addAttribute("currentPage", page);
+            model.addAttribute("currentStatus", filter);
+            model.addAttribute("currentSortType", sort);
+            model.addAttribute("currentKeyword", keyword);
+
+            // データベースへは保存（update）せず、そのまま編集画面（task-edit）を呼び出して再表示する
             return "task-edit";
         }
-        // 記事の更新処理
-        task.setId(id);
+
+        // 2. エラーがなければ正常に更新処理を行ってリダイレクト
+        // ここでServiceの更新メソッド（例：taskService.update(id, task); など）を呼び出す
         taskService.saveTask(task);
 
-        // ★自動でURLパラメータに変換してリダイレクト先に付与してくれる
-        redirectAttributes.addAttribute("keyword", keyword);
-        redirectAttributes.addAttribute("filter", filter);
-        redirectAttributes.addAttribute("sort", sort);
-
-        return "redirect:/tasks"; // 後ろに自動で ?keyword=... が付きます
+        // リダイレクト先にも現在のページや検索条件を引き継ぐ
+        return "redirect:/tasks?page=" + page + "&filter=" + filter + "&sort=" + sort + "&keyword=" + keyword;
     }
 
     // 6.完了フラグをONにする

@@ -1,5 +1,9 @@
 package com.example.KijiList;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import java.util.List;
 
@@ -70,19 +74,21 @@ public class TaskService {
     }
 
     // タスクの取得
-    public List<Task> getTasks(String keyword, String filter, String sort) {
-        // キーワードが空文字またはスペースのみの場合はNULLにしてSQLの判定をスキップさせる
-        String searchKeyword = (keyword != null && !keyword.trim().isEmpty()) ? keyword.trim() : null;
+    public Page<Task> getTasks(int page, String status, String keyword, String sortType) {
+        int pageSize = 5; // 1ページあたりの件数
 
-        // フィルター文字列をBooleanに変換（昨日までの実装を想定）
+        // 完了状態（status）の文字列を、リポジトリが求める Boolean (isCompleted) に変換
         Boolean isCompleted = null;
-        if ("uncompleted".equals(filter)) {
-            isCompleted = false;
-        } else if ("completed".equals(filter)) {
+        if ("completed".equals(status)) {
             isCompleted = true;
+        } else if ("uncompleted".equals(status)) {
+            isCompleted = false;
         }
 
-        // デフォルトのソート順を設定
-        return taskRepository.findByKeywordAndStatusAndSort(searchKeyword, isCompleted, sort);
+        // Repositoryの@Query側でCASE文ソートを行うため、ここではソート条件を指定しない（Sort.unsorted()）
+        Pageable pageable = PageRequest.of(page, pageSize, Sort.unsorted());
+
+        // 引数の順番をRepositoryの定義と合わせる
+        return taskRepository.findByKeywordAndStatusAndSort(keyword, isCompleted, sortType, pageable);
     }
 }

@@ -77,36 +77,66 @@
             <!-- 💡 ソート切り替えボタンエリア -->
             <div class="btn-group" role="group" aria-label="Sort options">
                 <!-- 期限順ボタン -->
-                <a th:href="@{/tasks(sort='deadline', filter=${currentFilter}, keyword=${currentKeyword})}"
+                <a th:href="@{/tasks(sort='deadline', filter=${currentStatus}, keyword=${currentKeyword})}"
                    th:classappend="${currentSort == 'deadline'} ? 'btn-success' : 'btn-outline-success'"
-                   class="btn fw-bold">📅 期限が近い順</a>
+                   class="btn fw-bold btn-outline-primary">📅 期限が近い順</a>
 
                 <!-- 重要度順ボタン -->
-                <a th:href="@{/tasks(filter=${currentFilter}, sort='priority', keyword=${currentKeyword})}"
+                <a th:href="@{/tasks(filter=${currentStatus}, sort='priority', keyword=${currentKeyword})}"
                    th:classappend="${currentSort == 'priority'} ? 'active' : ''"
                    class="btn btn-outline-dark btn-sm">🔥 重要度順</a>
             </div>
         </div>
+        <nav th:if="${taskPage.totalPages > 1}" aria-label="Page navigation">
+            <ul class="pagination justify-content-center">
+
+                <!-- 「前へ」ボタン（最初のページでは無効化） -->
+                <li class="page-item" th:classappend="${taskPage.first} ? 'disabled'">
+                    <a class="page-item page-link"
+                       th:href="@{/tasks(page=${taskPage.number - 1}, status=${currentStatus}, keyword=${currentKeyword}, sortType=${currentSortType})}">
+                        前へ
+                    </a>
+                </li>
+
+                <!-- ページ番号ボタン（0から始まるため +1 して表示） -->
+                <li class="page-item"
+                    th:each="i : ${#numbers.sequence(0, taskPage.totalPages - 1)}"
+                    th:classappend="${i == taskPage.number} ? 'active'">
+                    <a class="page-link"
+                       th:href="@{/tasks(page=${i}, status=${currentStatus}, keyword=${currentKeyword}, sortType=${currentSortType})}"
+                       th:text="${i + 1}">1</a>
+                </li>
+
+                <!-- 「次へ」ボタン（最後のページでは無効化） -->
+                <li class="page-item" th:classappend="${taskPage.last} ? 'disabled'">
+                    <a class="page-link"
+                       th:href="@{/tasks(page=${taskPage.number + 1}, status=${currentStatus}, keyword=${currentKeyword}, sortType=${currentSortType})}">
+                        次へ
+                    </a>
+                </li>
+
+            </ul>
+        </nav>
         <div class="mb-3">
             <div class="btn-group" role="group" aria-label="Filter options">
                 <!-- すべてボタン -->
-                <a th:href="@{/tasks(filter='all', sort=${currentSort}, keyword=${currentKeyword})}"
+                <a th:href="@{/tasks(filter='all', sort=${currentSortType}, keyword=${currentKeyword})}"
                    th:classappend="${currentFilter == 'all'} ? 'btn-primary' : 'btn-outline-primary'"
                    class="btn btn-sm fw-bold">全て</a>
 
                 <!-- 未完了のみボタン -->
-                <a th:href="@{/tasks(filter='uncompleted', sort=${currentSort}, keyword=${currentKeyword})}"
+                <a th:href="@{/tasks(filter='uncompleted', sort=${currentSortType}, keyword=${currentKeyword})}"
                    th:classappend="${currentFilter == 'uncompleted'} ? 'active' : ''" class="btn btn-outline-dark btn-sm">
                     未完了のみ</a>
 
                 <!-- 完了ボタン -->
-                <a th:href="@{/tasks(filter='completed', sort=${currentSort}, keyword=${currentKeyword})}"
+                <a th:href="@{/tasks(filter='completed', sort=${currentSortType}, keyword=${currentKeyword})}"
                    th:classappend="${currentFilter == 'completed'} ? 'btn-primary' : 'btn-outline-primary'"
                    class="btn btn-sm fw-bold">完了済み</a>
             </div>
         </div>
     <ul class="list-group shadow-sm">
-        <li th:each="task : ${tasks}" class="list-group-item d-flex justify-content-between align-items-center">
+        <li th:each="task : ${taskList}" class="list-group-item d-flex justify-content-between align-items-center">
             <div>
                 <!-- ★ タスク名の文字色制御 -->
                 <span class="fw-bold"
@@ -129,16 +159,16 @@
 
             <div class="d-flex align-items-center">
                 <!-- ★ 編集画面へ遷移するリンクボタンを追加 -->
-                <a th:href="@{/tasks/{id}/edit(id=${task.id}, keyword=${currentKeyword}, filter=${currentFilter}, sort=${currentSort})}"
+                <a th:href="@{/tasks/{id}/edit(id=${task.id}, keyword=${currentKeyword}, filter=${currentStatus}, sort=${currentSortType})}"
                    class="btn btn-sm btn-outline-primary">編集</a>
 
                 <!-- 未完了の場合のみ「完了」ボタンを表示 -->
                 <form th:if="${!task.completed}"
-                      th:action="@{/complete-task/{id}(id=${task.id}, keyword=${currentKeyword}, filter=${currentFilter}, sort=${currentSort})}" method="post" style="display:inline;">
+                      th:action="@{/complete-task/{id}(id=${task.id}, keyword=${currentKeyword}, filter=${currentStatus}, sort=${currentSortType})}" method="post" style="display:inline;">
                     <button type="submit" class="btn btn-sm btn-success">完了</button>
                 </form>
 
-                <form th:action="@{/delete-task/{id}(id=${task.id}, keyword=${currentKeyword}, filter=${currentFilter}, sort=${currentSort})}"
+                <form th:action="@{/delete-task/{id}(id=${task.id}, keyword=${currentKeyword}, filter=${currentStatus}, sort=${currentSortType})}"
                       method="post">
                     <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('本当に削除しますか？')">
                     <input type="hidden" name="id" th:value="${task.id}">完了（削除）</button>
