@@ -3,7 +3,6 @@
 <head th:replace="~{layout/base :: header('一覧管理')}"></head>
 <body class="bg-light">
 
-<!-- ★★★ <body>の直後にこの1行を追加 ★★★ -->
     <nav th:replace="~{layout/base :: nav}"></nav>
 
 <!-- ※既存の mt-5（マージントップ5）は、ナビゲーションバーとの間隔が開きすぎるため mt-2 などに縮めると綺麗です -->
@@ -135,47 +134,99 @@
                    class="btn btn-sm fw-bold">完了済み</a>
             </div>
         </div>
-    <ul class="list-group shadow-sm">
-        <li th:each="task : ${taskList}" class="list-group-item d-flex justify-content-between align-items-center">
-            <div>
-                <!-- ★ タスク名の文字色制御 -->
-                <span class="fw-bold"
-                      th:text="${task.name}"
-                      th:classappend="${task.completed} ? 'text-decoration-line-through text-muted' : (${task.deadline == T(java.time.LocalDate).now()} ? 'text-danger fw-bolder' : (${task.deadline.isAfter(T(java.time.LocalDate).now()) && (task.deadline.isBefore(T(java.time.LocalDate).now().plusDays(4)))} ? 'text-warning' : ''))">
-                    タスク名
-                </span>
+        <form th:action="@{/tasks/bulk-delete}" method="post" id="bulkDeleteForm">
+            <!-- パラメータ維持（変数名は現在のコントローラーのモデル属性名に合わせて調整してください） -->
+            <input type="hidden" name="keyword" th:value="${currentKeyword}">
+            <input type="hidden" name="filter" th:value="${currentStatus}">
+            <input type="hidden" name="sort" th:value="${currentSortType}">
+            <!-- もしページネーションの変数（currentPageなど）があればここに追加してください -->
 
-                <!-- ★ バッジの色制御 -->
-                <span class="badge ms-2"
-                      th:text="${task.deadline}"
-                      th:classappend="${task.deadline == T(java.time.LocalDate).now()} ? 'bg-danger' : (${task.deadline.isAfter(T(java.time.LocalDate).now()) && (task.deadline.isBefore(T(java.time.LocalDate).now().plusDays(4)))} ? 'bg-warning text-dark' : 'bg-secondary')">
-                2026-01-01
-                </span>
-                <span class="badge ms-1"
-                      th:text="${task.priority}"
-                      th:classappend="${task.priority == '高'} ? 'bg-danger' : (${task.priority == '中'} ? 'bg-info text-dark' : 'bg-light text-dark border')">中
-                </span>
+            <!-- 2. 「全選択チェックボックス」と「一括削除ボタン」の配置 -->
+            <div class="d-flex align-items-center mb-3 bg-light p-2 rounded border">
+                <div class="form-check ms-2">
+                    <input class="form-check-input" type="checkbox" id="selectAll">
+                    <label class="form-check-label small text-muted" for="selectAll">すべて選択</label>
+                </div>
+                <button type="submit" class="btn btn-sm btn-danger ms-auto" id="bulkDeleteBtn" disabled onclick="return confirm('選択したタスクをすべて削除しますか？')">
+                    選択したタスクを一括削除
+                </button>
             </div>
 
-            <div class="d-flex align-items-center">
-                <!-- ★ 編集画面へ遷移するリンクボタンを追加 -->
-                <a th:href="@{/tasks/{id}/edit(id=${task.id}, keyword=${currentKeyword}, filter=${currentStatus}, sort=${currentSortType})}"
-                   class="btn btn-sm btn-outline-primary">編集</a>
+            <!-- 3. 既存のリストグループ（チェックボックスを追加） -->
+            <ul class="list-group shadow-sm">
+                <li th:each="task : ${taskList}" class="list-group-item d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <!-- 【追加】個別のチェックボックスを先頭に配置 -->
+                        <input class="form-check-input me-3 task-checkbox" type="checkbox" name="taskIds" th:value="${task.id}">
 
-                <!-- 未完了の場合のみ「完了」ボタンを表示 -->
-                <form th:if="${!task.completed}"
-                      th:action="@{/complete-task/{id}(id=${task.id}, keyword=${currentKeyword}, filter=${currentStatus}, sort=${currentSortType})}" method="post" style="display:inline;">
-                    <button type="submit" class="btn btn-sm btn-success">完了</button>
-                </form>
+                        <div>
+                            <!-- ★ タスク名の文字色制御 -->
+                            <span class="fw-bold"
+                                  th:text="${task.name}"
+                                  th:classappend="${task.completed} ? 'text-decoration-line-through text-muted' : (${task.deadline == T(java.time.LocalDate).now()} ? 'text-danger fw-bolder' : (${task.deadline.isAfter(T(java.time.LocalDate).now()) && (task.deadline.isBefore(T(java.time.LocalDate).now().plusDays(4)))} ? 'text-warning' : ''))">
+                        タスク名
+                    </span>
 
-                <form th:action="@{/delete-task/{id}(id=${task.id}, keyword=${currentKeyword}, filter=${currentStatus}, sort=${currentSortType})}"
-                      method="post">
-                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('本当に削除しますか？')">
-                    <input type="hidden" name="id" th:value="${task.id}">完了（削除）</button>
-                </form>
-            </div>
-        </li>
-    </ul>
+                            <!-- ★ バッジの色制御 -->
+                            <span class="badge ms-2"
+                                  th:text="${task.deadline}"
+                                  th:classappend="${task.deadline == T(java.time.LocalDate).now()} ? 'bg-danger' : (${task.deadline.isAfter(T(java.time.LocalDate).now()) && (task.deadline.isBefore(T(java.time.LocalDate).now().plusDays(4)))} ? 'bg-warning text-dark' : 'bg-secondary')">
+                    2026-01-01
+                    </span>
+                            <span class="badge ms-1"
+                                  th:text="${task.priority}"
+                                  th:classappend="${task.priority == '高'} ? 'bg-danger' : (${task.priority == '中'} ? 'bg-info text-dark' : 'bg-light text-dark border')">中
+                    </span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center">
+                        <!-- ★ 編集画面へ遷移するリンクボタンを追加 -->
+                        <a th:href="@{/tasks/{id}/edit(id=${task.id}, keyword=${currentKeyword}, filter=${currentStatus}, sort=${currentSortType})}"
+                           class="btn btn-sm btn-outline-primary me-1">編集</a>
+
+                        <!-- 未完了の場合のみ「完了」ボタンを表示 -->
+                        <form th:if="${!task.completed}"
+                              th:action="@{/complete-task/{id}(id=${task.id}, keyword=${currentKeyword}, filter=${currentStatus}, sort=${currentSortType})}" method="post" style="display:inline;" class="me-1">
+                            <button type="submit" class="btn btn-sm btn-success">完了</button>
+                        </form>
+
+                        <form th:action="@{/delete-task/{id}(id=${task.id}, keyword=${currentKeyword}, filter=${currentStatus}, sort=${currentSortType})}"
+                              method="post" style="display:inline;">
+                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('本当に削除しますか？')">
+                                完了（削除）</button>
+                        </form>
+                    </div>
+                </li>
+            </ul>
+        </form>
+
+        <!-- 4. JavaScript（全選択・ボタンの活性制御） -->
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const selectAll = document.getElementById('selectAll');
+                const checkboxes = document.querySelectorAll('.task-checkbox');
+                const deleteBtn = document.getElementById('bulkDeleteBtn');
+
+                function toggleDeleteButton() {
+                    const checkedCount = document.querySelectorAll('.task-checkbox:checked').length;
+                    deleteBtn.disabled = checkedCount === 0; // 1つもチェックがなければボタンを無効化
+                }
+
+                selectAll.addEventListener('change', function () {
+                    checkboxes.forEach(cb => cb.checked = selectAll.checked);
+                    toggleDeleteButton();
+                });
+
+                checkboxes.forEach(cb => {
+                    cb.addEventListener('change', function () {
+                        const checkedCount = document.querySelectorAll('.task-checkbox:checked').length;
+                        selectAll.checked = (checkedCount === checkboxes.length);
+                        toggleDeleteButton();
+                    });
+                });
+            });
+        </script>
 
 </div>
 

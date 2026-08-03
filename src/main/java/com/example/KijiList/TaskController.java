@@ -1,4 +1,6 @@
 package com.example.KijiList;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -174,5 +176,35 @@ public class TaskController {
         redirectAttributes.addAttribute("sort", sort);
 
         return "redirect:/tasks";// ※既存の一覧画面のURLに合わせて変更してください
+    }
+    // 既存のクラス内に配置してください
+    @PostMapping("/tasks/bulk-delete")
+    public String bulkDeleteTasks(
+            @RequestParam(value = "taskIds", required = false) List<Long> taskIds,
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "filter", defaultValue = "ALL") String filter,
+            @RequestParam(value = "sort", defaultValue = "deadline") String sort,
+            // もしページネーションのページ番号も維持したい場合は以下を生かしてください
+            // @RequestParam(value = "page", defaultValue = "0") int page,
+            RedirectAttributes redirectAttributes) {
+
+        // 1. チェックボックスが1つ以上選択されている場合のみ削除処理を実行
+        if (taskIds != null && !taskIds.isEmpty()) {
+            taskService.deleteTasks(taskIds); // ※このあとService側に実装します
+            redirectAttributes.addFlashAttribute("successMessage", taskIds.size() + "件のタスクを一括削除しました。");
+        }
+
+        // 2. 現在の「検索窓・フィルター・ソート」の状態を維持して一覧画面にリダイレクト
+        // 既存の「単体削除」のリダイレクトURLの組み立て方を参考に、変数名を微調整してください
+        String encodedKeyword = "";
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            // 「作業」を「%E4%BD%9C%E6%A5%AD」のような形式に安全に変換します
+            encodedKeyword = URLEncoder.encode(keyword, StandardCharsets.UTF_8);
+        }
+
+        // 組み立てるURLには「encodedKeyword」を指定する
+        return String.format("redirect:/tasks?keyword=%s&filter=%s&sort=%s",
+                encodedKeyword, filter, sort);
+        // ページ番号も維持する場合は末尾に &page=" + page などを追記してください
     }
 }
