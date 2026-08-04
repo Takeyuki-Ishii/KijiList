@@ -22,7 +22,7 @@ public class Task {
 
     // ★期限：StringからLocalDateに変更し、未入力禁止 ＋ 今日以降のみ許可
     @NotNull(message = "期限を入力してください")
-    @FutureOrPresent(message = "期限には今日以降の日付を指定してください")
+    // @FutureOrPresent(message = "期限には今日以降の日付を指定してください")
     private LocalDate deadline;
 
     // 完了フラグ（初期値は未完了の false）
@@ -66,5 +66,11 @@ public class Task {
 
     public void setPriority(String priority) {
         this.priority = priority;
+    }
+
+    // ★ 動的に期限切れを判定するメソッド
+    public boolean isOverdue() {
+        // 未完了、かつ、期限が今日よりも前の場合にtrue
+        return !this.completed && this.deadline != null && this.deadline.isBefore(LocalDate.now());
     }
 }

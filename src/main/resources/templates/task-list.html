@@ -156,32 +156,40 @@
             <ul class="list-group shadow-sm">
                 <li th:each="task : ${taskList}" class="list-group-item d-flex justify-content-between align-items-center">
                     <div class="d-flex align-items-center">
-                        <!-- 【追加】個別のチェックボックスを先頭に配置 -->
+                        <!-- 個別のチェックボックスを先頭に配置 -->
                         <input class="form-check-input me-3 task-checkbox" type="checkbox" name="taskIds" th:value="${task.id}">
 
                         <div>
-                            <!-- ★ タスク名の文字色制御 -->
+                            <!-- ★ タスク名の文字色制御（期限切れ条件を追加） -->
                             <span class="fw-bold"
                                   th:text="${task.name}"
-                                  th:classappend="${task.completed} ? 'text-decoration-line-through text-muted' : (${task.deadline == T(java.time.LocalDate).now()} ? 'text-danger fw-bolder' : (${task.deadline.isAfter(T(java.time.LocalDate).now()) && (task.deadline.isBefore(T(java.time.LocalDate).now().plusDays(4)))} ? 'text-warning' : ''))">
-                        タスク名
-                    </span>
+                                  th:classappend="${task.completed} ? 'text-decoration-line-through text-muted' : (
+                                      ${task.overdue} ? 'text-danger fst-italic fw-bolder' : (
+                                      ${task.deadline == T(java.time.LocalDate).now()} ? 'text-danger fw-bolder' : (
+                                      ${task.deadline.isAfter(T(java.time.LocalDate).now()) && (task.deadline.isBefore(T(java.time.LocalDate).now().plusDays(4)))} ? 'text-warning' : '')))">
+                    タスク名
+                </span>
 
-                            <!-- ★ バッジの色制御 -->
+                            <!-- ★ 期限切れ専用バッジ（期限切れの時だけ表示） -->
+                            <span th:if="${task.overdue}" class="badge bg-danger ms-2">期限切れ</span>
+
+                            <!-- ★ バッジの色制御（期限切れの条件を先頭に追加） -->
                             <span class="badge ms-2"
                                   th:text="${task.deadline}"
-                                  th:classappend="${task.deadline == T(java.time.LocalDate).now()} ? 'bg-danger' : (${task.deadline.isAfter(T(java.time.LocalDate).now()) && (task.deadline.isBefore(T(java.time.LocalDate).now().plusDays(4)))} ? 'bg-warning text-dark' : 'bg-secondary')">
+                                  th:classappend="${task.overdue} ? 'bg-danger' : (
+                                      ${task.deadline == T(java.time.LocalDate).now()} ? 'bg-danger' : (
+                                      ${task.deadline.isAfter(T(java.time.LocalDate).now()) && (task.deadline.isBefore(T(java.time.LocalDate).now().plusDays(4)))} ? 'bg-warning text-dark' : 'bg-secondary'))">
                     2026-01-01
-                    </span>
+                </span>
                             <span class="badge ms-1"
                                   th:text="${task.priority}"
                                   th:classappend="${task.priority == '高'} ? 'bg-danger' : (${task.priority == '中'} ? 'bg-info text-dark' : 'bg-light text-dark border')">中
-                    </span>
+                </span>
                         </div>
                     </div>
 
                     <div class="d-flex align-items-center">
-                        <!-- ★ 編集画面へ遷移するリンクボタンを追加 -->
+                        <!-- 編集画面へ遷移するリンクボタン -->
                         <a th:href="@{/tasks/{id}/edit(id=${task.id}, keyword=${currentKeyword}, filter=${currentStatus}, sort=${currentSortType})}"
                            class="btn btn-sm btn-outline-primary me-1">編集</a>
 
