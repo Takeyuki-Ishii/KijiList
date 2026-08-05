@@ -50,7 +50,20 @@
                     期限のエラーメッセージ
                 </div>
             </div>
-
+            <!-- メモ入力欄 -->
+            <div class="mb-3">
+                <label for="memo" class="form-label">メモ（100文字以内）</label>
+                <textarea th:field="*{memo}"
+                          id="memo"
+                          rows="3"
+                          class="form-control"
+                          th:classappend="${#fields.hasErrors('memo')} ? 'is-invalid' : ''"
+                          placeholder="タスクの詳細メモを入力"></textarea>
+                <!-- バリデーションエラーメッセージ用 -->
+                <div class="invalid-feedback" th:if="${#fields.hasErrors('memo')}" th:errors="*{memo}">
+                    メモのエラーメッセージ
+                </div>
+            </div>
             <!-- ボタンエリア -->
             <div class="d-flex gap-2">
                 <button type="submit" class="btn btn-success w-50 fw-bold">更新する</button>

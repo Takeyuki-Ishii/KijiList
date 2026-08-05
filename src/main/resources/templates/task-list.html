@@ -30,11 +30,13 @@
             <!-- 優先度（重要度）プルダウン項目 -->
             <div class="mb-3">
                 <label class="form-label fw-bold">重要度</label>
-                <select th:field="*{priority}" class="form-select">
-                    <option value="低">低</option>
-                    <option value="中" selected>中</option> <!-- 初期選択を"中"にする -->
-                    <option value="高">高</option>
-                </select>
+                <label>
+                    <select th:field="*{priority}" class="form-select">
+                        <option value="低">低</option>
+                        <option value="中" selected>中</option> <!-- 初期選択を"中"にする -->
+                        <option value="高">高</option>
+                    </select>
+                </label>
             </div>
             <!-- 期限の入力欄 -->
             <div class="mb-3">
@@ -48,7 +50,18 @@
                     期限のエラーメッセージ
                 </div>
             </div>
-
+            <!-- メモ（詳細説明）の入力欄 -->
+            <div class="mb-3">
+                <label class="form-label fw-bold">メモ（詳細説明）</label>
+                <!-- 複数行入力のため textarea を使用。rows="3" で初期の縦幅を指定 -->
+                <textarea th:field="*{memo}"
+                          th:classappend="${#fields.hasErrors('memo')} ? 'is-invalid' : ''"
+                          class="form-control" rows="3" placeholder="例：特売のものを2パック。無脂肪乳でも可。"></textarea>
+                <!-- バリデーションエラー時のメッセージ表示エリア -->
+                <div class="invalid-feedback" th:if="${#fields.hasErrors('memo')}" th:errors="*{memo}">
+                    メモのエラーメッセージ
+                </div>
+            </div>
             <button type="submit" class="btn btn-primary w-100 mb-4">タスクを追加する</button>
         </form>
         <!-- 「タスクを追加する」ボタンの修正（mb-4 を追加） -->
@@ -156,44 +169,67 @@
             <ul class="list-group shadow-sm">
                 <li th:each="task : ${taskList}" class="list-group-item d-flex justify-content-between align-items-center">
                     <div class="d-flex align-items-center">
-                        <!-- 個別のチェックボックスを先頭に配置 -->
-                        <input class="form-check-input me-3 task-checkbox" type="checkbox" name="taskIds" th:value="${task.id}">
+                        <!-- 個別チェックボックス -->
+                        <label>
+                            <input class="form-check-input me-3 task-checkbox" type="checkbox" name="taskIds" th:value="${task.id}">
+                        </label>
 
-                        <div>
-                            <!-- ★ タスク名の文字色制御（期限切れ条件を追加） -->
-                            <span class="fw-bold"
-                                  th:text="${task.name}"
-                                  th:classappend="${task.completed} ? 'text-decoration-line-through text-muted' : (
-                                      ${task.overdue} ? 'text-danger fst-italic fw-bolder' : (
-                                      ${task.deadline == T(java.time.LocalDate).now()} ? 'text-danger fw-bolder' : (
-                                      ${task.deadline.isAfter(T(java.time.LocalDate).now()) && (task.deadline.isBefore(T(java.time.LocalDate).now().plusDays(4)))} ? 'text-warning' : '')))">
-                    タスク名
-                </span>
+                        <!-- 修正：中の要素を縦並び(d-flex flex-column)にして2段目をレイアウトできるようにする -->
+                        <div class="d-flex flex-column">
+                            <!-- 1段目：タスク名と各種バッジ -->
+                            <div class="d-flex align-items-center flex-wrap">
+                                <!-- タスク名の文字色制御 -->
+                                <span class="fw-bold"
+                                      th:text="${task.name}"
+                                      th:classappend="${task.completed} ? 'text-decoration-line-through text-muted' : (
+                              ${task.overdue} ? 'text-danger fst-italic fw-bolder' : (
+                              ${task.deadline == T(java.time.LocalDate).now()} ? 'text-danger fw-bolder' : (
+                              ${task.deadline.isAfter(T(java.time.LocalDate).now()) && (task.deadline.isBefore(T(java.time.LocalDate).now().plusDays(4)))} ? 'text-warning' : '')))">
+                        タスク名
+                    </span>
 
-                            <!-- ★ 期限切れ専用バッジ（期限切れの時だけ表示） -->
-                            <span th:if="${task.overdue}" class="badge bg-danger ms-2">期限切れ</span>
+                                <!-- 期限切れ専用バッジ -->
+                                <span th:if="${task.overdue}" class="badge bg-danger ms-2">期限切れ</span>
 
-                            <!-- ★ バッジの色制御（期限切れの条件を先頭に追加） -->
-                            <span class="badge ms-2"
-                                  th:text="${task.deadline}"
-                                  th:classappend="${task.overdue} ? 'bg-danger' : (
-                                      ${task.deadline == T(java.time.LocalDate).now()} ? 'bg-danger' : (
-                                      ${task.deadline.isAfter(T(java.time.LocalDate).now()) && (task.deadline.isBefore(T(java.time.LocalDate).now().plusDays(4)))} ? 'bg-warning text-dark' : 'bg-secondary'))">
-                    2026-01-01
-                </span>
-                            <span class="badge ms-1"
-                                  th:text="${task.priority}"
-                                  th:classappend="${task.priority == '高'} ? 'bg-danger' : (${task.priority == '中'} ? 'bg-info text-dark' : 'bg-light text-dark border')">中
-                </span>
+                                <!-- バッジの色制御 -->
+                                <span class="badge ms-2"
+                                      th:text="${task.deadline}"
+                                      th:classappend="${task.overdue} ? 'bg-danger' : (
+                              ${task.deadline == T(java.time.LocalDate).now()} ? 'bg-danger' : (
+                              ${task.deadline.isAfter(T(java.time.LocalDate).now()) && (task.deadline.isBefore(T(java.time.LocalDate).now().plusDays(4)))} ? 'bg-warning text-dark' : 'bg-secondary'))">
+                        2026-01-01
+                    </span>
+                                <span class="badge ms-1"
+                                      th:text="${task.priority}"
+                                      th:classappend="${task.priority == '高'} ? 'bg-danger' : (${task.priority == '中'} ? 'bg-info text-dark' : 'bg-light text-dark border')">
+                        中
+                    </span>
+                            </div>
+
+                            <!-- 追加：2段目 メモ（詳細説明）と作成日時の表示領域 -->
+                            <div class="mt-1 d-flex align-items-center text-muted" style="font-size: 0.85rem;">
+                                <!-- メモが存在する場合のみ表示（完了時は打ち消し線） -->
+                                <span th:if="${task.memo != null && !task.memo.isEmpty()}"
+                                      th:text="${task.memo}"
+                                      class="me-3 text-truncate"
+                                      style="max-width: 300px;"
+                                      th:classappend="${task.completed} ? 'text-decoration-line-through'">
+                        ここにメモが表示されます
+                    </span>
+
+                                <!-- 作成日時の表示（秒をカットしてスッキリ表示） -->
+                                <span th:if="${task.createdAt != null}">
+                        <i class="bi bi-clock me-1"></i>作成: <span th:text="${#temporals.format(task.createdAt, 'yyyy/MM/dd HH:mm')}">2026/01/01 00:00</span>
+                    </span>
+                            </div>
                         </div>
                     </div>
 
+                    <!-- 右側の操作ボタン領域（変更なし） -->
                     <div class="d-flex align-items-center">
-                        <!-- 編集画面へ遷移するリンクボタン -->
                         <a th:href="@{/tasks/{id}/edit(id=${task.id}, keyword=${currentKeyword}, filter=${currentStatus}, sort=${currentSortType})}"
                            class="btn btn-sm btn-outline-primary me-1">編集</a>
 
-                        <!-- 未完了の場合のみ「完了」ボタンを表示 -->
                         <form th:if="${!task.completed}"
                               th:action="@{/complete-task/{id}(id=${task.id}, keyword=${currentKeyword}, filter=${currentStatus}, sort=${currentSortType})}" method="post" style="display:inline;" class="me-1">
                             <button type="submit" class="btn btn-sm btn-success">完了</button>
@@ -235,8 +271,6 @@
                 });
             });
         </script>
-
-</div>
-
+    </div>
 </body>
 </html>
