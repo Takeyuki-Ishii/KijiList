@@ -1,6 +1,10 @@
 HELP.md
 target/
+!.mvn/wrapper/maven-wrapper.properties
+classworld.properties
 .mvn/wrapper/maven-wrapper.jar
+/mvnw
+/mvnw.cmd
 !**/src/main/**/target/
 !**/src/test/**/target/
 
@@ -13,11 +17,12 @@ target/
 .springBeans
 .sts4-cache
 
-### IntelliJ IDEA ###
-.idea
+# --- 開発ツール (IntelliJ IDEA) の設定ファイル ---
+.idea/
 *.iws
 *.iml
 *.ipr
+out/
 
 ### NetBeans ###
 /nbproject/private/
@@ -31,3 +36,8 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# ---H2データベースの実データファイル ---
+*.mv.db
+*.trace.db
+/data/
