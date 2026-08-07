@@ -7,7 +7,7 @@
 
 <!-- ※既存の mt-5（マージントップ5）は、ナビゲーションバーとの間隔が開きすぎるため mt-2 などに縮めると綺麗です -->
     <div class="container mt-2" style="max-width: 600px;">
-    <h1 class="text-center mb-4 text-primary">タスク一覧管理</h1>
+    <h1 class="text-center mb-4 text-primary">一覧管理</h1>
 
     <!-- 入力フォームカードの部分を以下のように差し替えます -->
     <div class="card p-4 shadow-sm mb-4">
@@ -16,7 +16,7 @@
 
             <!-- タスク名の入力欄 -->
             <div class="mb-3">
-                <label class="form-label fw-bold">新しいタスク</label>
+                <label class="form-label fw-bold">新規タイトル</label>
                 <!-- ★ name="newTask" から th:field="*{name}" に変更 -->
                 <input type="text" th:field="*{name}"
                        th:classappend="${#fields.hasErrors('name')} ? 'is-invalid' : ''"
@@ -62,7 +62,7 @@
                     メモのエラーメッセージ
                 </div>
             </div>
-            <button type="submit" class="btn btn-primary w-100 mb-4">タスクを追加する</button>
+            <button type="submit" class="btn btn-primary w-100 mb-4">新規追加する</button>
         </form>
         <!-- 「タスクを追加する」ボタンの修正（mb-4 を追加） -->
         <!-- 検索フォームの修正（btn-secondary に変更） -->
@@ -72,7 +72,7 @@
             <input type="hidden" name="sort" th:value="${currentSort}">
 
             <div class="col-auto">
-                <input type="text" name="keyword" th:value="${currentKeyword}" class="form-control" placeholder="タスクを検索...">
+                <input type="text" name="keyword" th:value="${currentKeyword}" class="form-control" placeholder="キーワード検索...">
             </div>
             <div class="col-auto">
                 <!-- 色を btn-secondary (グレー) に変更 -->
@@ -149,6 +149,7 @@
         </div>
         <form th:action="@{/tasks/bulk-delete}" method="post" id="bulkDeleteForm">
             <!-- パラメータ維持（変数名は現在のコントローラーのモデル属性名に合わせて調整してください） -->
+            <input type="hidden" name="page" th:value="${currentPage}">
             <input type="hidden" name="keyword" th:value="${currentKeyword}">
             <input type="hidden" name="filter" th:value="${currentStatus}">
             <input type="hidden" name="sort" th:value="${currentSortType}">
@@ -164,86 +165,86 @@
                     選択したタスクを一括削除
                 </button>
             </div>
+        </form>
 
-            <!-- 3. 既存のリストグループ（チェックボックスを追加） -->
-            <ul class="list-group shadow-sm">
-                <li th:each="task : ${taskList}" class="list-group-item d-flex justify-content-between align-items-center">
-                    <div class="d-flex align-items-center">
-                        <!-- 個別チェックボックス -->
-                        <label>
-                            <input class="form-check-input me-3 task-checkbox" type="checkbox" name="taskIds" th:value="${task.id}">
-                        </label>
+        <!-- 3. 既存のリストグループ（チェックボックスを追加） -->
+        <ul class="list-group shadow-sm">
+            <li th:each="task : ${taskList}" class="list-group-item d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <!-- 個別チェックボックス -->
+                    <label>
+                        <input class="form-check-input me-3 task-checkbox" type="checkbox" name="taskIds" th:value="${task.id}" form="bulkDeleteForm">
+                    </label>
 
-                        <!-- 修正：中の要素を縦並び(d-flex flex-column)にして2段目をレイアウトできるようにする -->
-                        <div class="d-flex flex-column">
-                            <!-- 1段目：タスク名と各種バッジ -->
-                            <div class="d-flex align-items-center flex-wrap">
-                                <!-- タスク名の文字色制御 -->
-                                <span class="fw-bold"
-                                      th:text="${task.name}"
-                                      th:classappend="${task.completed} ? 'text-decoration-line-through text-muted' : (
+                    <!-- 修正：中の要素を縦並び(d-flex flex-column)にして2段目をレイアウトできるようにする -->
+                    <div class="d-flex flex-column">
+                        <!-- 1段目：タスク名と各種バッジ -->
+                        <div class="d-flex align-items-center flex-wrap">
+                            <!-- タスク名の文字色制御 -->
+                            <span class="fw-bold"
+                                  th:text="${task.name}"
+                                  th:classappend="${task.completed} ? 'text-decoration-line-through text-muted' : (
                               ${task.overdue} ? 'text-danger fst-italic fw-bolder' : (
                               ${task.deadline == T(java.time.LocalDate).now()} ? 'text-danger fw-bolder' : (
                               ${task.deadline.isAfter(T(java.time.LocalDate).now()) && (task.deadline.isBefore(T(java.time.LocalDate).now().plusDays(4)))} ? 'text-warning' : '')))">
                         タスク名
                     </span>
 
-                                <!-- 期限切れ専用バッジ -->
-                                <span th:if="${task.overdue}" class="badge bg-danger ms-2">期限切れ</span>
+                            <!-- 期限切れ専用バッジ -->
+                            <span th:if="${task.overdue}" class="badge bg-danger ms-2">期限切れ</span>
 
-                                <!-- バッジの色制御 -->
-                                <span class="badge ms-2"
-                                      th:text="${task.deadline}"
-                                      th:classappend="${task.overdue} ? 'bg-danger' : (
+                            <!-- バッジの色制御 -->
+                            <span class="badge ms-2"
+                                  th:text="${task.deadline}"
+                                  th:classappend="${task.overdue} ? 'bg-danger' : (
                               ${task.deadline == T(java.time.LocalDate).now()} ? 'bg-danger' : (
                               ${task.deadline.isAfter(T(java.time.LocalDate).now()) && (task.deadline.isBefore(T(java.time.LocalDate).now().plusDays(4)))} ? 'bg-warning text-dark' : 'bg-secondary'))">
                         2026-01-01
                     </span>
-                                <span class="badge ms-1"
-                                      th:text="${task.priority}"
-                                      th:classappend="${task.priority == '高'} ? 'bg-danger' : (${task.priority == '中'} ? 'bg-info text-dark' : 'bg-light text-dark border')">
+                            <span class="badge ms-1"
+                                  th:text="${task.priority}"
+                                  th:classappend="${task.priority == '高'} ? 'bg-danger' : (${task.priority == '中'} ? 'bg-info text-dark' : 'bg-light text-dark border')">
                         中
                     </span>
-                            </div>
+                        </div>
 
-                            <!-- 追加：2段目 メモ（詳細説明）と作成日時の表示領域 -->
-                            <div class="mt-1 d-flex align-items-center text-muted" style="font-size: 0.85rem;">
-                                <!-- メモが存在する場合のみ表示（完了時は打ち消し線） -->
-                                <span th:if="${task.memo != null && !task.memo.isEmpty()}"
-                                      th:text="${task.memo}"
-                                      class="me-3 text-truncate"
-                                      style="max-width: 300px;"
-                                      th:classappend="${task.completed} ? 'text-decoration-line-through'">
+                        <!-- 追加：2段目 メモ（詳細説明）と作成日時の表示領域 -->
+                        <div class="mt-1 d-flex align-items-center text-muted" style="font-size: 0.85rem;">
+                            <!-- メモが存在する場合のみ表示（完了時は打ち消し線） -->
+                            <span th:if="${task.memo != null && !task.memo.isEmpty()}"
+                                  th:text="${task.memo}"
+                                  class="me-3 text-truncate"
+                                  style="max-width: 300px;"
+                                  th:classappend="${task.completed} ? 'text-decoration-line-through'">
                         ここにメモが表示されます
                     </span>
 
-                                <!-- 作成日時の表示（秒をカットしてスッキリ表示） -->
-                                <span th:if="${task.createdAt != null}">
+                            <!-- 作成日時の表示（秒をカットしてスッキリ表示） -->
+                            <span th:if="${task.createdAt != null}">
                         <i class="bi bi-clock me-1"></i>作成: <span th:text="${#temporals.format(task.createdAt, 'yyyy/MM/dd HH:mm')}">2026/01/01 00:00</span>
                     </span>
-                            </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- 右側の操作ボタン領域（変更なし） -->
-                    <div class="d-flex align-items-center">
-                        <a th:href="@{/tasks/{id}/edit(id=${task.id}, keyword=${currentKeyword}, filter=${currentStatus}, sort=${currentSortType})}"
-                           class="btn btn-sm btn-outline-primary me-1">編集</a>
+                <!-- 右側の操作ボタン領域（変更なし） -->
+                <div class="d-flex align-items-center">
+                    <a th:href="@{/tasks/{id}/edit(id=${task.id}, keyword=${currentKeyword}, filter=${currentStatus}, sort=${currentSortType})}"
+                       class="btn btn-sm btn-outline-primary me-1">編集</a>
 
-                        <form th:if="${!task.completed}"
-                              th:action="@{/complete-task/{id}(id=${task.id}, keyword=${currentKeyword}, filter=${currentStatus}, sort=${currentSortType})}" method="post" style="display:inline;" class="me-1">
-                            <button type="submit" class="btn btn-sm btn-success">完了</button>
-                        </form>
+                    <form th:if="${!task.completed}"
+                          th:action="@{/complete-task/{id}(id=${task.id}, keyword=${currentKeyword}, filter=${currentStatus}, sort=${currentSortType})}" method="post" style="display:inline;" class="me-1">
+                        <button type="submit" class="btn btn-sm btn-success">完了</button>
+                    </form>
 
-                        <form th:action="@{/delete-task/{id}(id=${task.id}, keyword=${currentKeyword}, filter=${currentStatus}, sort=${currentSortType})}"
-                              method="post" style="display:inline;">
-                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('本当に削除しますか？')">
-                                完了（削除）</button>
-                        </form>
-                    </div>
-                </li>
-            </ul>
-        </form>
+                    <form th:action="@{/delete-task/{id}(id=${task.id}, keyword=${currentKeyword}, filter=${currentStatus}, sort=${currentSortType})}"
+                          method="post" style="display:inline;">
+                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('本当に削除しますか？')">
+                            完了（削除）</button>
+                    </form>
+                </div>
+            </li>
+        </ul>
 
         <!-- 4. JavaScript（全選択・ボタンの活性制御） -->
         <script>
