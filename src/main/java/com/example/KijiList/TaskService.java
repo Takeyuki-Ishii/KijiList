@@ -19,39 +19,6 @@ public class TaskService {
         this.taskRepository = taskRepository;
     }
 
-    // 全てのタスクを取得する
-    public List<Task> getAllTasks() {
-        // 以前の findAllByOrderByDeadlineAsc() から変更します
-        return taskRepository.findAllPrioritizedTasks();
-    }
-
-    // タスクを並び変えて取得する
-    public List<Task> getTasks(String sort) {
-        if ("priority".equals(sort)) {
-            return taskRepository.findAllPrioritizedTasks();
-        } else {
-            return taskRepository.findAllByOrderByDeadlineAsc();
-        }
-    }
-    public List<Task> getFilteredAndSortedTasks(String filter, String sort) {
-        // 1. 「未完了のみ(active)」または「完了のみ(completed)」で絞り込む場合
-        if ("active".equals(filter) || "completed".equals(filter)) {
-            boolean completedStatus = "completed".equals(filter); // completedならtrue、activeならfalse
-
-            if ("priority".equals(sort)) {
-                return taskRepository.findAllByCompletedPrioritized(completedStatus);
-            } else {
-                return taskRepository.findAllByCompletedOrderByDeadlineAsc(completedStatus);
-            }
-        }
-
-        // 2. 「すべて(all)」の場合は、前回のソートロジックをそのまま使う
-        if ("priority".equals(sort)) {
-            return taskRepository.findAllPrioritizedTasks();
-        } else {
-            return taskRepository.findAllByOrderByDeadlineAsc();
-        }
-    }
     // タスクを保存・更新する
     public void saveTask(Task task) {
         taskRepository.save(task);
@@ -65,9 +32,7 @@ public class TaskService {
 
     // タスクを完了状態にする
     public void completeTask(Long id) {
-        Task task = getTaskById(id);
-        task.setCompleted(true);
-        taskRepository.save(task);
+        taskRepository.completeTaskById(id);
     }
 
     // タスクを削除する
