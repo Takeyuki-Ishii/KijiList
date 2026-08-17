@@ -32,7 +32,7 @@ public interface TaskRepository extends JpaRepository<Task, Long> { // ★★★
     // 修正案：大文字小文字を区別せず小文字に統一して判定する
     // 戻り値を Page<Task> にし、引数の末尾に Pageable pageable を追加します
     @Query("SELECT t FROM Task t WHERE " +
-            "(:keyword IS NULL OR :keyword = '' OR t.name LIKE %:keyword%) AND " +
+            "(:keyword IS NULL OR :keyword = '' OR LOWER(t.name) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND " +
             "(:isCompleted IS NULL OR t.completed = :isCompleted) " +
             "ORDER BY " +
             "CASE WHEN LOWER(:sort) = 'priority' THEN " +
@@ -43,5 +43,5 @@ public interface TaskRepository extends JpaRepository<Task, Long> { // ★★★
             @Param("keyword") String keyword,
             @Param("isCompleted") Boolean isCompleted,
             @Param("sort") String sort,
-            Pageable pageable); // ★末尾に追加
+            Pageable pageable);
 }
