@@ -18,9 +18,11 @@
             <div class="mb-3">
                 <label class="form-label fw-bold">新規タイトル</label>
                 <!-- ★ name="newTask" から th:field="*{name}" に変更 -->
-                <input type="text" th:field="*{name}"
-                       th:classappend="${#fields.hasErrors('name')} ? 'is-invalid' : ''"
-                       class="form-control" placeholder="例：牛乳を買う">
+                <label>
+                    <input type="text" th:field="*{name}"
+                           th:classappend="${#fields.hasErrors('name')} ? 'is-invalid' : ''"
+                           class="form-control" placeholder="例：牛乳を買う">
+                </label>
                 <!-- ★ エラーメッセージ表示エリア -->
                 <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}">
                     タスク名のエラーメッセージ
@@ -147,7 +149,7 @@
                    class="btn btn-sm fw-bold">完了済み</a>
             </div>
         </div>
-        <form th:action="@{/tasks/bulk-delete}" method="post" id="bulkDeleteForm">
+        <form th:action="@{/tasks/bulk-delete}" method="post" id="bulkDeleteForm" th:unless="${taskList.isEmpty()}">
             <!-- パラメータ維持（変数名は現在のコントローラーのモデル属性名に合わせて調整してください） -->
             <input type="hidden" name="page" th:value="${currentPage}">
             <input type="hidden" name="keyword" th:value="${currentKeyword}">
@@ -166,9 +168,14 @@
                 </button>
             </div>
         </form>
+        <!-- ✨【追加】タスクが0件のときに表示するメッセージエリア -->
+        <!-- th:if="${taskList.isEmpty()}" を指定（タスクが空の時だけ表示） -->
+        <div th:if="${taskList.isEmpty()}" class="alert alert-info text-center py-4 shadow-sm" role="alert">
+            <i class="bi bi-info-circle me-2"></i>該当するタスクはありません。
+        </div>
 
         <!-- 3. 既存のリストグループ（チェックボックスを追加） -->
-        <ul class="list-group shadow-sm">
+        <ul class="list-group shadow-sm" th:unless="${taskList.isEmpty()}">
             <li th:each="task : ${taskList}" class="list-group-item d-flex justify-content-between align-items-center">
                 <div class="d-flex align-items-center">
                     <!-- 個別チェックボックス -->
