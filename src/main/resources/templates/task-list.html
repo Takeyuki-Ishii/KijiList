@@ -12,7 +12,7 @@
     <!-- 入力フォームカードの部分を以下のように差し替えます -->
     <div class="card p-4 shadow-sm mb-4">
         <!-- ★ th:object="${task}" を追加してコントローラーのモデルと紐付け -->
-        <form th:action="@{/add-task}" th:object="${task}" method="post" novalidate>
+        <form th:action="@{/add-task(page=${currentPage}, keyword=${currentKeyword}, filter=${currentStatus}, sort=${currentSortType})}" th:object="${task}" method="post" novalidate>
 
             <!-- タイトルの入力欄 -->
             <div class="mb-3">
@@ -238,15 +238,15 @@
 
                 <!-- 右側の操作ボタン領域（変更なし） -->
                 <div class="d-flex align-items-center">
-                    <a th:href="@{/tasks/{id}/edit(id=${task.id}, keyword=${currentKeyword}, filter=${currentStatus}, sort=${currentSortType})}"
+                    <a th:href="@{/tasks/{id}/edit(id=${task.id}, page=${currentPage}, keyword=${currentKeyword}, filter=${currentStatus}, sort=${currentSortType})}"
                        class="btn btn-sm btn-outline-primary me-1">編集</a>
 
                     <form th:if="${!task.completed}"
-                          th:action="@{/complete-task/{id}(id=${task.id}, keyword=${currentKeyword}, filter=${currentStatus}, sort=${currentSortType})}" method="post" style="display:inline;" class="me-1">
+                          th:action="@{/complete-task/{id}(id=${task.id}, page=${currentPage}, keyword=${currentKeyword}, filter=${currentStatus}, sort=${currentSortType})}" method="post" style="display:inline;" class="me-1">
                         <button type="submit" class="btn btn-sm btn-success">完了</button>
                     </form>
 
-                    <form th:action="@{/delete-task/{id}(id=${task.id}, keyword=${currentKeyword}, filter=${currentStatus}, sort=${currentSortType})}"
+                    <form th:action="@{/delete-task/{id}(id=${task.id}, page=${currentPage}, keyword=${currentKeyword}, filter=${currentStatus}, sort=${currentSortType})}"
                           method="post" style="display:inline;">
                         <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('本当に削除しますか？')">
                             完了（削除）</button>

@@ -13,7 +13,7 @@
 
     <div class="card p-4 shadow-sm mb-4">
         <!-- ★ 送信先を更新用URL（/update-task/ID）に設定 -->
-        <form th:action="@{/update-task/{id}(id=${task.id}, keyword=${returnKeyword}, filter=${returnFilter}, sort=${returnSort})}"
+        <form th:action="@{/update-task/{id}(id=${task.id}, page=${currentPage}, keyword=${returnKeyword}, filter=${returnFilter}, sort=${returnSort})}"
               th:object="${task}" method="post" novalidate>
             <!-- タスク名の入力欄（最初から現在の値が入ります） -->
             <div class="mb-3">

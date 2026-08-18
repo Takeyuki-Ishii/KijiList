@@ -1,20 +1,19 @@
 package com.example.KijiList;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 
-import jakarta.validation.Valid; // ★追加
-import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.validation.BindingResult; // ★追加
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ModelAttribute; // ★追加
-import org.springframework.web.bind.annotation.PathVariable; // ★追加
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 
@@ -49,7 +48,6 @@ public class TaskController {
         model.addAttribute("currentStatus", filter);
         model.addAttribute("currentSortType", sort);
         model.addAttribute("currentKeyword", keyword);
-        // ※昨日までの実装で「task」以外の名前（例: taskForm）にしている場合はその名前に合わせてください
         model.addAttribute("task", new Task());
         return "task-list"; // 一覧画面のHTML名
     }
@@ -86,17 +84,30 @@ public class TaskController {
 
         // 2. エラーがなければ正常に保存してリダイレクト
         taskService.saveTask(task); // お使いの保存メソッド
-        return "redirect:/tasks?page=" + page + "&filter=" + filter + "&sort=" + sort + "&keyword=" + keyword;
+        model.addAttribute("currentPage", page);
+        model.addAttribute("currentStatus", filter);
+        model.addAttribute("currentSortType", sort);
+        model.addAttribute("currentKeyword", keyword);
+        String encodedKeyword = "";
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            // 「作業」を「%E4%BD%9C%E6%A5%AD」のような形式に安全に変換します
+            encodedKeyword = URLEncoder.encode(keyword, StandardCharsets.UTF_8);
+        }
+
+        // 組み立てるURLには「encodedKeyword」を指定する
+        return "redirect:/tasks?page=" + page + "&filter=" + filter + "&sort=" + sort + "&keyword=" + encodedKeyword;
     }
 
     // 3.タスクを削除する
     @PostMapping("/delete-task/{id}")
     public String deleteTask(@PathVariable Long id,
+                             @RequestParam(defaultValue = "0") int page,
                              @RequestParam(value = "keyword", required = false) String keyword,
                              @RequestParam(value = "filter", required = false) String filter,
                              @RequestParam(value = "sort", required = false) String sort,
                              RedirectAttributes redirectAttributes) {
         taskService.deleteTask(id);
+        redirectAttributes.addAttribute("page", page);
         redirectAttributes.addAttribute("keyword", keyword);
         redirectAttributes.addAttribute("filter", filter);
         redirectAttributes.addAttribute("sort", sort);
@@ -106,6 +117,7 @@ public class TaskController {
     @GetMapping("/tasks/{id}/edit")
     public String showEditForm(
             @PathVariable("id") Long id,
+            @RequestParam(value = "page", required = false) int page,
             @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(value = "filter", required = false) String filter,
             @RequestParam(value = "sort", required = false) String sort,
@@ -117,6 +129,7 @@ public class TaskController {
         model.addAttribute("task", task);
 
         // 【追加】一覧画面から引き継いだ状態を、編集画面のHTMLにも渡す
+        model.addAttribute("currentPage", page);
         model.addAttribute("returnKeyword", keyword);
         model.addAttribute("returnFilter", filter);
         model.addAttribute("returnSort", sort);
@@ -154,14 +167,19 @@ public class TaskController {
         // 2. エラーがなければ正常に更新処理を行ってリダイレクト
         // ここでServiceの更新メソッド（例：taskService.update(id, task); など）を呼び出す
         taskService.saveTask(task);
-
+        String encodedKeyword = "";
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            // 「作業」を「%E4%BD%9C%E6%A5%AD」のような形式に安全に変換します
+            encodedKeyword = URLEncoder.encode(keyword, StandardCharsets.UTF_8);
+        }
         // リダイレクト先にも現在のページや検索条件を引き継ぐ
-        return "redirect:/tasks?page=" + page + "&filter=" + filter + "&sort=" + sort + "&keyword=" + keyword;
+        return "redirect:/tasks?page=" + page + "&filter=" + filter + "&sort=" + sort + "&keyword=" + encodedKeyword;
     }
 
     // 6.完了フラグをONにする
     @PostMapping("/complete-task/{id}")
     public String completeTask(@PathVariable Long id,
+                               @RequestParam(value = "page", required = false) int page,
                                @RequestParam(value = "keyword", required = false) String keyword,
                                @RequestParam(value = "filter", required = false) String filter,
                                @RequestParam(value = "sort", required = false) String sort,
@@ -171,6 +189,7 @@ public class TaskController {
         taskService.completeTask(id);
 
         // ★リダイレクト先に現在の状態を引き継ぐ
+        redirectAttributes.addAttribute("page", page);
         redirectAttributes.addAttribute("keyword", keyword);
         redirectAttributes.addAttribute("filter", filter);
         redirectAttributes.addAttribute("sort", sort);
@@ -181,6 +200,7 @@ public class TaskController {
     @PostMapping("/tasks/bulk-delete")
     public String bulkDeleteTasks(
             @RequestParam(value = "taskIds", required = false) List<Long> taskIds,
+            @RequestParam(value = "page", required = false) int page,
             @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(value = "filter", defaultValue = "ALL") String filter,
             @RequestParam(value = "sort", defaultValue = "deadline") String sort,
@@ -195,7 +215,6 @@ public class TaskController {
         }
 
         // 2. 現在の「検索窓・フィルター・ソート」の状態を維持して一覧画面にリダイレクト
-        // 既存の「単体削除」のリダイレクトURLの組み立て方を参考に、変数名を微調整してください
         String encodedKeyword = "";
         if (keyword != null && !keyword.trim().isEmpty()) {
             // 「作業」を「%E4%BD%9C%E6%A5%AD」のような形式に安全に変換します
@@ -203,8 +222,6 @@ public class TaskController {
         }
 
         // 組み立てるURLには「encodedKeyword」を指定する
-        return String.format("redirect:/tasks?keyword=%s&filter=%s&sort=%s",
-                encodedKeyword, filter, sort);
-        // ページ番号も維持する場合は末尾に &page=" + page などを追記してください
+        return "redirect:/tasks?page=" + page + "&filter=" + filter + "&sort=" + sort + "&keyword=" + encodedKeyword;
     }
 }
