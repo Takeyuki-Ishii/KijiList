@@ -68,7 +68,7 @@
             <!-- ボタンエリア -->
             <div class="d-flex gap-2">
                 <button type="submit" class="btn btn-success w-50 fw-bold">更新する</button>
-                <a th:href="@{/tasks(keyword=${returnKeyword}, filter=${returnFilter}, sort=${returnSort})}"
+                <a th:href="@{/tasks(page=${currentPage}, keyword=${returnKeyword}, filter=${returnFilter}, sort=${returnSort})}"
                    class="btn btn-secondary w-50 fw-bold">キャンセル</a>
             </div>
         </form>

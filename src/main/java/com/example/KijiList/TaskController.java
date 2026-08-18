@@ -205,7 +205,6 @@ public class TaskController {
             @RequestParam(value = "filter", defaultValue = "ALL") String filter,
             @RequestParam(value = "sort", defaultValue = "deadline") String sort,
             // もしページネーションのページ番号も維持したい場合は以下を生かしてください
-            // @RequestParam(value = "page", defaultValue = "0") int page,
             RedirectAttributes redirectAttributes) {
 
         // 1. チェックボックスが1つ以上選択されている場合のみ削除処理を実行
