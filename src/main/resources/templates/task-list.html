@@ -14,17 +14,19 @@
         <!-- ★ th:object="${task}" を追加してコントローラーのモデルと紐付け -->
         <form th:action="@{/add-task}" th:object="${task}" method="post" novalidate>
 
-            <!-- タスク名の入力欄 -->
+            <!-- タイトルの入力欄 -->
             <div class="mb-3">
                 <label class="form-label fw-bold">新規タイトル</label>
-                <!-- ★ name="newTask" から th:field="*{name}" に変更 -->
                 <label>
                     <input type="text" th:field="*{name}"
+                           maxlength="50"
                            th:classappend="${#fields.hasErrors('name')} ? 'is-invalid' : ''"
-                           class="form-control" placeholder="例：牛乳を買う">
+                           class="form-control" placeholder="例：風景写真の記事">
                 </label>
                 <!-- ★ エラーメッセージ表示エリア -->
-                <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}">
+                <div th:if="${#fields.hasErrors('name')}"
+                     th:errors="*{name}"
+                     class="text-danger" style="font-size: 0.875rem; margin-top: 0.25rem;">
                     タスク名のエラーメッセージ
                 </div>
             </div>
@@ -228,7 +230,7 @@
 
                             <!-- 作成日時の表示（秒をカットしてスッキリ表示） -->
                             <span th:if="${task.createdAt != null}">
-                        <i class="bi bi-clock me-1"></i>作成: <span th:text="${#temporals.format(task.createdAt, 'yyyy/MM/dd HH:mm')}">2026/01/01 00:00</span>
+                        <i class="bi bi-clock me-1"></i>作成: <span th:text="${#temporals.format(task.createdAt, 'yyyy/MM/dd HH:mm:ss')}">2026/01/01 00:00:00</span>
                     </span>
                         </div>
                     </div>

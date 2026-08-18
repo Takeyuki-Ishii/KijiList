@@ -21,7 +21,8 @@ public class Task {
     private Long id;
 
     // ★タスク名：空文字やスペースのみを禁止する
-    @NotBlank(message = "タスク名を入力してください")
+    @NotBlank(message = "タイトルを入力してください")
+    @Size(max = 50, message = "タイトルは50文字以内で入力してください")
     private String name;
 
     // ★期限：StringからLocalDateに変更し、未入力禁止 ＋ 今日以降のみ許可
