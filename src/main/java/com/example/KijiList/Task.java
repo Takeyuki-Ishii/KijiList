@@ -1,5 +1,6 @@
 package com.example.KijiList;
 
+import com.example.KijiList.entity.SiteUser;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;
@@ -56,39 +57,36 @@ public class Task {
         this.name = name;
         this.deadline = deadline;
     }
-
+    // ゲッター・セッター
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
 
-    // ★Getter/SetterもLocalDateに変更
     public LocalDate getDeadline() { return deadline; }
     public void setDeadline(LocalDate deadline) { this.deadline = deadline; }
 
-    // ゲッター・セッターを追加
     public boolean isCompleted() {
         return completed;
     }
-
     public void setCompleted(boolean completed) {
         this.completed = completed;
     }
 
-    // ゲッター・セッターを追加
     public String getPriority() {
         return priority;
     }
-
     public void setPriority(String priority) {
         this.priority = priority;
     }
 
     public String getMemo() { return memo; }
     public void setMemo(String memo) { this.memo = memo; }
+
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 

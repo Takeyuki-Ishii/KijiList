@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html xmlns:th="http://thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>ユーザー会員登録</title>
+    <!-- もし既存の共通CSSがあればここに読み込んでください -->
+</head>
+<body>
+<div style="max-width: 400px; margin: 50px auto; padding: 20px; border: 1px solid #ccc;">
+    <h2>会員登録メニュー</h2>
+
+    <!-- エラーメッセージ（ユーザー名重複時） -->
+    <div th:if="${param.error}" style="color: red; margin-bottom: 15px;">
+        そのユーザー名はすでに使用されています。
+    </div>
+
+    <form th:action="@{/signup}" method="post">
+        <div style="margin-bottom: 15px;">
+            <label for="username">ユーザー名：</label><br>
+            <input type="text" id="username" name="username" required style="width: 100%; padding: 8px;">
+        </div>
+        <div style="margin-bottom: 15px;">
+            <label for="password">パスワード：</label><br>
+            <input type="password" id="password" name="password" required style="width: 100%; padding: 8px;">
+        </div>
+        <button type="submit" style="width: 100%; padding: 10px; background-color: #007bff; color: white; border: none; cursor: pointer;">
+            アカウントを作成する
+        </button>
+    </form>
+
+    <p style="margin-top: 15px; text-align: center;">
+        <a th:href="@{/login}">すでにアカウントをお持ちの方（ログイン）</a>
+    </p>
+</div>
+</body>
+</html>
