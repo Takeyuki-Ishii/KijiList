@@ -2,7 +2,11 @@ package com.example.KijiList;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+
+import com.example.KijiList.entity.SiteUser;
+import com.example.KijiList.service.SimpleUserDetails;
 import org.springframework.data.domain.Page;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,17 +31,21 @@ public class TaskController {
         this.taskService = taskService;
     }
 
-    // 1.タスク一覧を表示する
+    // タスク一覧を表示する
     @GetMapping("/tasks")
     public String listTasks(
             @RequestParam(value = "filter", defaultValue = "all") String filter,
             @RequestParam(value = "sort", defaultValue = "deadline") String sort,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(value = "keyword", required = false, defaultValue = "") String keyword,
+            @AuthenticationPrincipal SimpleUserDetails userDetails, // ★追加：ログインユーザーの取得
             Model model) {
 
-        // ServiceからPageオブジェクトを取得
-        Page<Task> taskPage = taskService.getTasks(page, filter, keyword, sort);
+        // ★ログインユーザーのEntityを取得
+        SiteUser loginUser = userDetails.getUser();
+
+        // ★Serviceの引数に loginUser を追加
+        Page<Task> taskPage = taskService.getTasks(loginUser.getId(), page, filter, keyword, sort);
 
         // Thymeleafに渡すデータをモデルに格納
         model.addAttribute("taskPage", taskPage);                // Pageオブジェクトごと渡す
@@ -52,23 +60,26 @@ public class TaskController {
         return "task-list"; // 一覧画面のHTML名
     }
 
-    // 2.タスクを追加する
+    // タスクを追加する
     @PostMapping("/add-task")
     public String addTask(
-            @Validated @ModelAttribute("task") Task task, // @Validatedや@Validがついている箇所
+            @Validated @ModelAttribute("task") Task task,
             BindingResult bindingResult,
             Model model,
-            // 現在のページネーションや検索状態も維持するために引数で受け取る
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "ALL") String filter,
+            @RequestParam(defaultValue = "all") String filter, // 大文字小文字のズレを防ぐため小文字推奨（コントローラーのデフォルト値に合わせる）
             @RequestParam(defaultValue = "") String keyword,
-            @RequestParam(defaultValue = "deadline") String sort) {
+            @RequestParam(defaultValue = "deadline") String sort,
+            @AuthenticationPrincipal SimpleUserDetails userDetails)// ★追加：ログインユーザーの取得
+    {
+        // ★ログインユーザーのEntityを取得
+        SiteUser loginUser = userDetails.getUser();
 
         // 1. バリデーションエラーを検知した場合
         if (bindingResult.hasErrors()) {
 
-            // ★ココが重要！画面を再表示するために、一覧データ（5件分）をもう一度Modelに詰め直す
-            Page<Task> taskPage = taskService.getTasks(page, filter, keyword, sort);
+            // ★修正：一覧データの再取得時にも loginUser を渡す（4連動を維持するため）
+            Page<Task> taskPage = taskService.getTasks(loginUser.getId(), page, filter, keyword, sort);
             model.addAttribute("taskPage", taskPage);
             model.addAttribute("taskList", taskPage.getContent());
 
@@ -78,23 +89,25 @@ public class TaskController {
             model.addAttribute("currentSortType", sort);
             model.addAttribute("currentKeyword", keyword);
 
-            // 保存（service.save）は呼び出さずに、そのまま入力画面（一覧画面）を返す
             return "task-list";
         }
 
         // 2. エラーがなければ正常に保存してリダイレクト
-        taskService.saveTask(task); // お使いの保存メソッド
+        // ★重要：画面から送られてきたタスクオブジェクトに、現在のログインユーザーを紐付ける
+        task.setSiteUser(loginUser);
+
+        taskService.saveTask(task);
+
         model.addAttribute("currentPage", page);
         model.addAttribute("currentStatus", filter);
         model.addAttribute("currentSortType", sort);
         model.addAttribute("currentKeyword", keyword);
+
         String encodedKeyword = "";
         if (keyword != null && !keyword.trim().isEmpty()) {
-            // 「作業」を「%E4%BD%9C%E6%A5%AD」のような形式に安全に変換します
             encodedKeyword = URLEncoder.encode(keyword, StandardCharsets.UTF_8);
         }
 
-        // 組み立てるURLには「encodedKeyword」を指定する
         return "redirect:/tasks?page=" + page + "&filter=" + filter + "&sort=" + sort + "&keyword=" + encodedKeyword;
     }
 
@@ -105,30 +118,56 @@ public class TaskController {
                              @RequestParam(value = "keyword", required = false) String keyword,
                              @RequestParam(value = "filter", required = false) String filter,
                              @RequestParam(value = "sort", required = false) String sort,
+                             @AuthenticationPrincipal SimpleUserDetails userDetails, // ログインユーザーを取得
                              RedirectAttributes redirectAttributes) {
-        taskService.deleteTask(id);
+        // セキュリティブロック：削除対象の所有権をチェック
+        Task task = taskService.getTaskById(id);
+
+        if (task == null || !task.getSiteUser().getId().equals(userDetails.getUser().getId())) {
+            // 他人の情報、または存在しない情報の場合は削除を拒否
+            redirectAttributes.addFlashAttribute("errorMessage", "他ユーザの情報は削除できません。");
+        } else {
+            // 所有者が一致した場合のみ、安全に削除を実行
+            taskService.deleteTask(id);
+            redirectAttributes.addFlashAttribute("successMessage", "削除しました。");
+        }
         redirectAttributes.addAttribute("page", page);
-        redirectAttributes.addAttribute("keyword", keyword);
-        redirectAttributes.addAttribute("filter", filter);
-        redirectAttributes.addAttribute("sort", sort);
+        if (keyword != null) redirectAttributes.addAttribute("keyword", keyword);
+        if (filter != null) redirectAttributes.addAttribute("filter", filter);
+        if (sort != null) redirectAttributes.addAttribute("sort", sort);
         return "redirect:/tasks";
     }
     // 4. 編集画面を表示する
     @GetMapping("/tasks/{id}/edit")
     public String showEditForm(
             @PathVariable("id") Long id,
-            @RequestParam(value = "page", required = false) int page,
+            @RequestParam(value = "page", required = false, defaultValue = "0") int page,
             @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(value = "filter", required = false) String filter,
             @RequestParam(value = "sort", required = false) String sort,
+            @AuthenticationPrincipal SimpleUserDetails userDetails, // 1. ログインユーザーを取得
+            RedirectAttributes redirectAttributes,                  // 2. フラッシュメッセージ用
             Model model) {
 
-        // パスに含まれるIDを元に、編集対象のタスクを1件取得する
-        // 見つからなかった場合は例外を投げるか、一覧にリダイレクトします
+        // タスクを取得
         Task task = taskService.getTaskById(id);
-        model.addAttribute("task", task);
 
-        // 【追加】一覧画面から引き継いだ状態を、編集画面のHTMLにも渡す
+        // 3. 所有権のチェック（タスクが存在し、かつ作成者がログインユーザーと異なる場合）
+        if (task == null || !task.getSiteUser().getId().equals(userDetails.getUser().getId())) {
+            // エラーメッセージを設定（リダイレクト先の一覧画面で1度だけ表示される）
+            redirectAttributes.addFlashAttribute("errorMessage", "他ユーザの情報は編集できません。");
+
+            // 4. 現行のパラメータ（検索・ソート・フィルター・ページ）を維持して一覧へリダイレクト
+            redirectAttributes.addAttribute("page", page);
+            if (keyword != null) redirectAttributes.addAttribute("keyword", keyword);
+            if (filter != null) redirectAttributes.addAttribute("filter", filter);
+            if (sort != null) redirectAttributes.addAttribute("sort", sort);
+
+            return "redirect:/tasks"; // 一覧画面のパス（環境に合わせて調整してください）
+        }
+
+        // 所有者が一致した場合は通常通り編集画面を表示
+        model.addAttribute("task", task);
         model.addAttribute("currentPage", page);
         model.addAttribute("returnKeyword", keyword);
         model.addAttribute("returnFilter", filter);
@@ -147,6 +186,7 @@ public class TaskController {
             @RequestParam(defaultValue = "all") String filter,
             @RequestParam(defaultValue = "") String keyword,
             @RequestParam(defaultValue = "deadline") String sort,
+            @AuthenticationPrincipal SimpleUserDetails userDetails,
             Model model) {
 
         // 1. バリデーションエラー（空欄など）を検知した場合
@@ -165,7 +205,19 @@ public class TaskController {
         }
 
         // 2. エラーがなければ正常に更新処理を行ってリダイレクト
-        // ここでServiceの更新メソッド（例：taskService.update(id, task); など）を呼び出す
+        // セキュリティブロック：DBから変更前の既存タスクを取得して所有権をチェック
+        Task existingTask = taskService.getTaskById(id);
+        if (existingTask == null || !existingTask.getSiteUser().getId().equals(userDetails.getUser().getId())) {
+            // 他人のタスク、または存在しないタスクの場合は拒否して一覧へ戻す
+            return "redirect:/tasks?page=" + page + "&filter=" + filter + "&keyword=" + keyword + "&sort=" + sort;
+        }
+
+        // 3. 【最重要】送信されてきたtaskオブジェクトに、ログインユーザー情報をセットしてnullを解消
+        task.setSiteUser(userDetails.getUser());
+
+        // 必要に応じて、画面から送信されない項目（作成日時など）を既存データから引き継ぐ
+        task.setCreatedAt(existingTask.getCreatedAt());
+
         taskService.saveTask(task);
         String encodedKeyword = "";
         if (keyword != null && !keyword.trim().isEmpty()) {

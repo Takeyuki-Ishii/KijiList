@@ -21,7 +21,7 @@ public class Task {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // ★タスク名：空文字やスペースのみを禁止する
+    // タイトル：空文字やスペースのみを禁止する
     @NotBlank(message = "タイトルを入力してください")
     @Size(max = 50, message = "タイトルは50文字以内で入力してください")
     private String name;
@@ -48,6 +48,11 @@ public class Task {
     @LastModifiedDate // 更新時に自動挿入
     @Column(nullable = false)
     private LocalDateTime updatedAt;
+
+    // ★ ユーザーとの紐付け（多対一のリレーション）
+    @ManyToOne(fetch = FetchType.LAZY) // 必要な時だけユーザー情報を読み込む設定（パフォーマンス向上）
+    @JoinColumn(name = "user_id", nullable = false) // DB側に「user_id」という外部キーカラムを作成
+    private SiteUser siteUser;
 
     public Task() {
     }
@@ -90,6 +95,12 @@ public class Task {
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 
+    public SiteUser getSiteUser() {
+        return siteUser;
+    }
+    public void setSiteUser(SiteUser siteUser) {
+        this.siteUser = siteUser;
+    }
     // ★ 動的に期限切れを判定するメソッド
     public boolean isOverdue() {
         // 未完了、かつ、期限が今日よりも前の場合にtrue

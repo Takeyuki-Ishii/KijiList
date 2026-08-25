@@ -16,6 +16,11 @@ public class SimpleUserDetails implements UserDetails {
         this.siteUser = siteUser;
     }
 
+    // ★追加：コントローラーなどから自作の SiteUser オブジェクトを取得できるようにする
+    public SiteUser getUser() {
+        return this.siteUser;
+    }
+
     // 💡 データベースに保存されている権限（ROLE_USERなど）をSpring Security用に変換して返す
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

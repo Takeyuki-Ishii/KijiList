@@ -12,10 +12,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Repository
 public interface TaskRepository extends JpaRepository<Task, Long> { // ★★★ これを追加 ★★★
 
-    // キーワード、完了状態、ソート条件をすべて網羅するカスタムクエリ
-    // 修正案：大文字小文字を区別せず小文字に統一して判定する
-    // 戻り値を Page<Task> にし、引数の末尾に Pageable pageable を追加します
+    // キーワード、完了状態、ソート条件、およびログインユーザーで絞り込むカスタムクエリ
     @Query("SELECT t FROM Task t WHERE " +
+            "t.siteUser.id = :userId AND " + // 1. ログインユーザーのIDで絞り込み（必須条件）
             "(:keyword IS NULL OR :keyword = '' OR LOWER(t.name) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND " +
             "(:isCompleted IS NULL OR t.completed = :isCompleted) " +
             "ORDER BY " +
@@ -24,6 +23,7 @@ public interface TaskRepository extends JpaRepository<Task, Long> { // ★★★
             "ELSE 0 END ASC, " +
             "t.deadline ASC")
     Page<Task> findByKeywordAndStatusAndSort(
+            @Param("userId") Long userId, // 2. 引数にuserIdを追加
             @Param("keyword") String keyword,
             @Param("isCompleted") Boolean isCompleted,
             @Param("sort") String sort,

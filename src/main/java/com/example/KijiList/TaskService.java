@@ -1,5 +1,6 @@
 package com.example.KijiList;
 
+import com.example.KijiList.entity.SiteUser;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -41,7 +42,7 @@ public class TaskService {
     }
 
     // タスクの取得
-    public Page<Task> getTasks(int page, String status, String keyword, String sortType) {
+    public Page<Task> getTasks(Long user_id, int page, String status, String keyword, String sortType) {
         int pageSize = 5; // 1ページあたりの件数
 
         // 完了状態（status）の文字列を、リポジトリが求める Boolean (isCompleted) に変換
@@ -56,7 +57,7 @@ public class TaskService {
         Pageable pageable = PageRequest.of(page, pageSize, Sort.unsorted());
 
         // 引数の順番をRepositoryの定義と合わせる
-        return taskRepository.findByKeywordAndStatusAndSort(keyword, isCompleted, sortType, pageable);
+        return taskRepository.findByKeywordAndStatusAndSort(user_id, keyword, isCompleted, sortType, pageable);
     }
 
     // 既存のクラス内に配置してください
