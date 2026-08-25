@@ -8,12 +8,21 @@
 <!-- ※既存の mt-5（マージントップ5）は、ナビゲーションバーとの間隔が開きすぎるため mt-2 などに縮めると綺麗です -->
     <div class="container mt-2" style="max-width: 600px;">
     <h1 class="text-center mb-4 text-primary">一覧管理</h1>
+        <!-- エラーメッセージの表示エリア -->
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show mt-3" role="alert">
+            <span th:text="${errorMessage}">ここにエラーメッセージが表示されます</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
 
-    <!-- 入力フォームカードの部分を以下のように差し替えます -->
-    <div class="card p-4 shadow-sm mb-4">
+        <!-- 削除成功時などの成功メッセージ表示エリア -->
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show mt-3" role="alert">
+            <span th:text="${successMessage}">ここに成功メッセージが表示されます</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        <!-- 入力フォームカードの部分を以下のように差し替えます -->
+        <div class="card p-4 shadow-sm mb-4">
         <!-- ★ th:object="${task}" を追加してコントローラーのモデルと紐付け -->
         <form th:action="@{/add-task(page=${currentPage}, keyword=${currentKeyword}, filter=${currentStatus}, sort=${currentSortType})}" th:object="${task}" method="post" novalidate>
-
             <!-- タイトルの入力欄 -->
             <div class="mb-3">
                 <label class="form-label fw-bold">新規タイトル</label>
