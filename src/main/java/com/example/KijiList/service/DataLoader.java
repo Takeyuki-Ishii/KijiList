@@ -37,11 +37,11 @@ public class DataLoader implements CommandLineRunner {
             testUser.setPassword(passwordEncoder.encode("password123"));
 
             // 権限を設定（Spring Securityで一般的な一般ユーザー権限）
-            testUser.setRole("ROLE_USER");
+            testUser.setRole("ROLE_ADMIN");
 
             // データベースに保存
             userRepository.save(testUser);
-            System.out.println("--- 🔑 テストユーザー(user/password123)をデータベースに登録しました ---");
+            System.out.println("--- 🔑 テスト用管理者ユーザー(user/password123)をデータベースに登録しました ---");
         }
         if (taskRepository.count() == 0) {
             SiteUser testUser = new SiteUser();

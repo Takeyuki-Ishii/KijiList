@@ -9,15 +9,12 @@
     <div class="container mt-2" style="max-width: 600px;">
     <h1 class="text-center mb-4 text-primary">一覧管理</h1>
         <!-- エラーメッセージの表示エリア -->
-        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show mt-3" role="alert">
-            <span th:text="${errorMessage}">ここにエラーメッセージが表示されます</span>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <div th:if="${errorMessage}" class="alert alert-danger mt-3" role="alert">
+            <span th:text="${errorMessage}">エラーメッセージ</span>
         </div>
 
-        <!-- 削除成功時などの成功メッセージ表示エリア -->
-        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show mt-3" role="alert">
-            <span th:text="${successMessage}">ここに成功メッセージが表示されます</span>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <div th:if="${successMessage}" class="alert alert-success mt-3" role="alert">
+            <span th:text="${successMessage}">成功メッセージ</span>
         </div>
         <!-- 入力フォームカードの部分を以下のように差し替えます -->
         <div class="card p-4 shadow-sm mb-4">
@@ -291,5 +288,6 @@
             });
         </script>
     </div>
+    <script src="https://jsdelivr.net"></script>
 </body>
 </html>

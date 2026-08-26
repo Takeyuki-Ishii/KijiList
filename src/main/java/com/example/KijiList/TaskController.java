@@ -2,6 +2,7 @@ package com.example.KijiList;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Objects;
 
 import com.example.KijiList.entity.SiteUser;
 import com.example.KijiList.service.SimpleUserDetails;
@@ -41,11 +42,7 @@ public class TaskController {
             @AuthenticationPrincipal SimpleUserDetails userDetails, // ★追加：ログインユーザーの取得
             Model model) {
 
-        // ★ログインユーザーのEntityを取得
-        SiteUser loginUser = userDetails.getUser();
-
-        // ★Serviceの引数に loginUser を追加
-        Page<Task> taskPage = taskService.getTasks(loginUser.getId(), page, filter, keyword, sort);
+        Page<Task> taskPage = taskService.getTasks(userDetails, page, filter, keyword, sort);
 
         // Thymeleafに渡すデータをモデルに格納
         model.addAttribute("taskPage", taskPage);                // Pageオブジェクトごと渡す
@@ -79,7 +76,7 @@ public class TaskController {
         if (bindingResult.hasErrors()) {
 
             // ★修正：一覧データの再取得時にも loginUser を渡す（4連動を維持するため）
-            Page<Task> taskPage = taskService.getTasks(loginUser.getId(), page, filter, keyword, sort);
+            Page<Task> taskPage = taskService.getTasks(userDetails, page, filter, keyword, sort);
             model.addAttribute("taskPage", taskPage);
             model.addAttribute("taskList", taskPage.getContent());
 
@@ -118,19 +115,36 @@ public class TaskController {
                              @RequestParam(value = "keyword", required = false) String keyword,
                              @RequestParam(value = "filter", required = false) String filter,
                              @RequestParam(value = "sort", required = false) String sort,
-                             @AuthenticationPrincipal SimpleUserDetails userDetails, // ログインユーザーを取得
+                             @AuthenticationPrincipal SimpleUserDetails userDetails,
                              RedirectAttributes redirectAttributes) {
-        // セキュリティブロック：削除対象の所有権をチェック
-        Task task = taskService.getTaskById(id);
 
-        if (task == null || !task.getSiteUser().getId().equals(userDetails.getUser().getId())) {
+        Task task = taskService.getTaskById(id);
+        if (task == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "該当の情報が見つかりません。");
+            redirectAttributes.addAttribute("page", page);
+            if (keyword != null) redirectAttributes.addAttribute("keyword", keyword);
+            if (filter != null) redirectAttributes.addAttribute("filter", filter);
+            if (sort != null) redirectAttributes.addAttribute("sort", sort);
+            return "redirect:/tasks";
+        }
+
+        // 1. 管理者チェック
+        boolean isAdmin = userDetails.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+
+        // 2. 所有者チェック（Objects.equals で安全に比較して警告を解消）
+        boolean isOwner = Objects.equals(task.getSiteUser().getId(), userDetails.getUser().getId());
+
+        if (!isAdmin && !isOwner) {
             // 他人の情報、または存在しない情報の場合は削除を拒否
             redirectAttributes.addFlashAttribute("errorMessage", "他ユーザの情報は削除できません。");
         } else {
-            // 所有者が一致した場合のみ、安全に削除を実行
+            // 管理者、または所有者が一致した場合のみ、安全に削除を実行
             taskService.deleteTask(id);
             redirectAttributes.addFlashAttribute("successMessage", "削除しました。");
         }
+
+        // パラメータの維持ロジック
         redirectAttributes.addAttribute("page", page);
         if (keyword != null) redirectAttributes.addAttribute("keyword", keyword);
         if (filter != null) redirectAttributes.addAttribute("filter", filter);
@@ -151,9 +165,24 @@ public class TaskController {
 
         // タスクを取得
         Task task = taskService.getTaskById(id);
+        if (task == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "該当の情報が見つかりません。");
+            redirectAttributes.addAttribute("page", page);
+            if (keyword != null) redirectAttributes.addAttribute("keyword", keyword);
+            if (filter != null) redirectAttributes.addAttribute("filter", filter);
+            if (sort != null) redirectAttributes.addAttribute("sort", sort);
+            return "redirect:/tasks";
+        }
 
+        // 1. 管理者チェック
+        boolean isAdmin = userDetails.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+
+        // 2. 所有者チェック（Objects.equals で安全に比較して警告を解消）
+        boolean isOwner = Objects.equals(task.getSiteUser().getId(), userDetails.getUser().getId());
+
+        if (!isAdmin && !isOwner) {
         // 3. 所有権のチェック（タスクが存在し、かつ作成者がログインユーザーと異なる場合）
-        if (task == null || !task.getSiteUser().getId().equals(userDetails.getUser().getId())) {
             // エラーメッセージを設定（リダイレクト先の一覧画面で1度だけ表示される）
             redirectAttributes.addFlashAttribute("errorMessage", "他ユーザの情報は編集できません。");
 
@@ -204,20 +233,29 @@ public class TaskController {
             return "task-edit";
         }
 
-        // 2. エラーがなければ正常に更新処理を行ってリダイレクト
         // セキュリティブロック：DBから変更前の既存タスクを取得して所有権をチェック
         Task existingTask = taskService.getTaskById(id);
-        if (existingTask == null || !existingTask.getSiteUser().getId().equals(userDetails.getUser().getId())) {
+        if (existingTask == null) {
+            return "redirect:/tasks?page=" + page + "&filter=" + filter + "&keyword=" + keyword + "&sort=" + sort;
+        }
+        // 1. 管理者チェック
+        boolean isAdmin = userDetails.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+
+        // 2. 所有者チェック（Objects.equals で安全に比較して警告を解消）
+        boolean isOwner = Objects.equals(existingTask.getSiteUser().getId(), userDetails.getUser().getId());
+
+        if (!isAdmin && !isOwner) {
             // 他人のタスク、または存在しないタスクの場合は拒否して一覧へ戻す
             return "redirect:/tasks?page=" + page + "&filter=" + filter + "&keyword=" + keyword + "&sort=" + sort;
         }
 
         // 3. 【最重要】送信されてきたtaskオブジェクトに、ログインユーザー情報をセットしてnullを解消
-        task.setSiteUser(userDetails.getUser());
+        task.setSiteUser(existingTask.getSiteUser());
 
         // 必要に応じて、画面から送信されない項目（作成日時など）を既存データから引き継ぐ
         task.setCreatedAt(existingTask.getCreatedAt());
-
+        // エラーがなければ正常に更新処理を行ってリダイレクト
         taskService.saveTask(task);
         String encodedKeyword = "";
         if (keyword != null && !keyword.trim().isEmpty()) {

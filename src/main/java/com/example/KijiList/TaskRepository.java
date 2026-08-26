@@ -28,6 +28,20 @@ public interface TaskRepository extends JpaRepository<Task, Long> { // ★★★
             @Param("isCompleted") Boolean isCompleted,
             @Param("sort") String sort,
             Pageable pageable);
+    // 管理者用：全ユーザーのタスクを対象にするクエリ ===
+    @Query("SELECT t FROM Task t WHERE " +
+            "(:keyword IS NULL OR :keyword = '' OR LOWER(t.name) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND " +
+            "(:isCompleted IS NULL OR t.completed = :isCompleted) " +
+            "ORDER BY " +
+            "CASE WHEN LOWER(:sort) = 'priority' THEN " +
+            "  CASE t.priority WHEN '高' THEN 1 WHEN '中' THEN 2 WHEN '低' THEN 3 ELSE 4 END " +
+            "ELSE 0 END ASC, " +
+            "t.deadline ASC")
+    Page<Task> findAllByKeywordAndStatusAndSortAsAdmin(
+            @Param("keyword") String keyword,
+            @Param("isCompleted") Boolean isCompleted,
+            @Param("sort") String sort,
+            Pageable pageable);
 
     @Transactional
     @Modifying
