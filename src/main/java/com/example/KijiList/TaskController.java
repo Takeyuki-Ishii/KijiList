@@ -273,20 +273,41 @@ public class TaskController {
                                @RequestParam(value = "keyword", required = false) String keyword,
                                @RequestParam(value = "filter", required = false) String filter,
                                @RequestParam(value = "sort", required = false) String sort,
-                               RedirectAttributes redirectAttributes) { // ★追加
+                               @AuthenticationPrincipal SimpleUserDetails userDetails, // 認証情報の取得
+                               RedirectAttributes redirectAttributes) {
 
-        // 完了フラグ更新処理
-        taskService.completeTask(id);
-
-        // ★リダイレクト先に現在の状態を引き継ぐ
+        // 状態維持パラメータを事前にセット
         redirectAttributes.addAttribute("page", page);
         redirectAttributes.addAttribute("keyword", keyword);
         redirectAttributes.addAttribute("filter", filter);
         redirectAttributes.addAttribute("sort", sort);
 
-        return "redirect:/tasks";// ※既存の一覧画面のURLに合わせて変更してください
+        // セキュリティブロック：DBから変更前の既存タスクを取得して所有権をチェック
+        Task existingTask = taskService.getTaskById(id);
+        if (existingTask == null) {
+            return "redirect:/tasks?page=" + page + "&filter=" + filter + "&keyword=" + keyword + "&sort=" + sort;
+        }
+        // 1. 管理者チェック
+        boolean isAdmin = userDetails.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+
+        // 2. 所有者チェック（Objects.equals で安全に比較して警告を解消）
+        boolean isOwner = Objects.equals(existingTask.getSiteUser().getId(), userDetails.getUser().getId());
+
+
+        // 「管理者である」または「タスクの所有者である」のどちらも満たさない場合はブロック
+        if (!isAdmin && !isOwner) {
+            redirectAttributes.addFlashAttribute("errorMessage", "他人のタスクを完了にすることはできません。");
+            return "redirect:/tasks";
+        }
+
+        // 完了フラグ更新処理
+        taskService.completeTask(id);
+        redirectAttributes.addFlashAttribute("successMessage", "ステータスを完了にしました。");
+
+        return "redirect:/tasks";
     }
-    // 既存のクラス内に配置してください
+    // タスクの一括削除
     @PostMapping("/tasks/bulk-delete")
     public String bulkDeleteTasks(
             @RequestParam(value = "taskIds", required = false) List<Long> taskIds,
@@ -294,23 +315,48 @@ public class TaskController {
             @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(value = "filter", defaultValue = "ALL") String filter,
             @RequestParam(value = "sort", defaultValue = "deadline") String sort,
-            // もしページネーションのページ番号も維持したい場合は以下を生かしてください
+            @AuthenticationPrincipal SimpleUserDetails userDetails, // 認証情報の取得
             RedirectAttributes redirectAttributes) {
 
-        // 1. チェックボックスが1つ以上選択されている場合のみ削除処理を実行
-        if (taskIds != null && !taskIds.isEmpty()) {
-            taskService.deleteTasks(taskIds); // ※このあとService側に実装します
-            redirectAttributes.addFlashAttribute("successMessage", taskIds.size() + "件のタスクを一括削除しました。");
+        // 状態維持パラメータを事前にセット（RedirectAttributesが自動でURLエンコードを行うため手動エンコードは不要）
+        redirectAttributes.addAttribute("page", page);
+        redirectAttributes.addAttribute("keyword", keyword);
+        redirectAttributes.addAttribute("filter", filter);
+        redirectAttributes.addAttribute("sort", sort);
+
+        // 1. チェックボックスが選択されているか確認
+        if (taskIds == null || taskIds.isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "削除するタスクが選択されていません。");
+            return "redirect:/tasks";
         }
 
-        // 2. 現在の「検索窓・フィルター・ソート」の状態を維持して一覧画面にリダイレクト
-        String encodedKeyword = "";
-        if (keyword != null && !keyword.trim().isEmpty()) {
-            // 「作業」を「%E4%BD%9C%E6%A5%AD」のような形式に安全に変換します
-            encodedKeyword = URLEncoder.encode(keyword, StandardCharsets.UTF_8);
+        // 2. 権限チェック（管理者かどうかの判定）
+        boolean isAdmin = userDetails.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+
+        // 3. 各タスクの所有権を全件チェック
+        for (Long id : taskIds) {
+            Task existingTask = taskService.getTaskById(id);
+            // タスクが存在しない場合はスキップ、またはエラーハンドリング
+            if (existingTask == null) {
+                redirectAttributes.addFlashAttribute("errorMessage", "存在しないタスクが選択されています。");
+                return "redirect:/tasks";
+            }
+
+            // 所有者チェック
+            boolean isOwner = Objects.equals(existingTask.getSiteUser().getId(), userDetails.getUser().getId());
+
+            // 管理者でもなく、かつ所有者でもないタスクが1件でも混ざっていれば即ブロック
+            if (!isAdmin && !isOwner) {
+                redirectAttributes.addFlashAttribute("errorMessage", "他人のタスクを一括削除することはできません。");
+                return "redirect:/tasks";
+            }
         }
 
-        // 組み立てるURLには「encodedKeyword」を指定する
-        return "redirect:/tasks?page=" + page + "&filter=" + filter + "&sort=" + sort + "&keyword=" + encodedKeyword;
+        // 4. すべてのタスクの権限チェックを通過した場合のみ削除処理を実行
+        taskService.deleteTasks(taskIds);
+        redirectAttributes.addFlashAttribute("successMessage", taskIds.size() + "件のタスクを一括削除しました。");
+
+        return "redirect:/tasks";
     }
 }

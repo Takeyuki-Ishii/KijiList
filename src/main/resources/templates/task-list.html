@@ -249,13 +249,13 @@
 
                     <form th:if="${!task.completed}"
                           th:action="@{/complete-task/{id}(id=${task.id}, page=${currentPage}, keyword=${currentKeyword}, filter=${currentStatus}, sort=${currentSortType})}" method="post" style="display:inline;" class="me-1">
-                        <button type="submit" class="btn btn-sm btn-success">完了</button>
+                        <button type="submit" class="btn btn-sm btn-success">完了にする</button>
                     </form>
 
                     <form th:action="@{/delete-task/{id}(id=${task.id}, page=${currentPage}, keyword=${currentKeyword}, filter=${currentStatus}, sort=${currentSortType})}"
                           method="post" style="display:inline;">
                         <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('本当に削除しますか？')">
-                            完了（削除）</button>
+                            削除</button>
                     </form>
                 </div>
             </li>
