@@ -86,4 +86,23 @@ public class TaskService {
         // Repositoryの一括削除メソッドを呼び出します
         taskRepository.deleteAllByIdInBatch(taskIds);
     }
+    public long countTasksByCondition(Long userId, String keyword, String filter) {
+        // 1. filter文字列をBooleanに変換（既存の一覧表示ロジックと同様）
+        Boolean isCompleted = null;
+        if ("completed".equalsIgnoreCase(filter)) {
+            isCompleted = true;
+        } else if ("uncompleted".equalsIgnoreCase(filter)) {
+            isCompleted = false;
+        }
+
+        // 2. 件数（TotalElements）だけが欲しいので、サイズ1の軽量なPageableを作成して呼び出す
+        // ソート順は件数カウントに影響しないため適当な文字列でOKです
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 1);
+        org.springframework.data.domain.Page<Task> pageResult = taskRepository.findByKeywordAndStatusAndSort(
+                userId, keyword, isCompleted, "deadline", pageable
+        );
+
+        // 3. ページオブジェクトが持っている「全体の件数」を返す
+        return pageResult.getTotalElements();
+    }
 }

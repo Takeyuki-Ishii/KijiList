@@ -35,14 +35,14 @@ public class TaskController {
     // タスク一覧を表示する
     @GetMapping("/tasks")
     public String listTasks(
-            @RequestParam(value = "filter", defaultValue = "all") String filter,
+            @RequestParam(value = "status", defaultValue = "all") String status,
             @RequestParam(value = "sort", defaultValue = "deadline") String sort,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(value = "keyword", required = false, defaultValue = "") String keyword,
             @AuthenticationPrincipal SimpleUserDetails userDetails, // ★追加：ログインユーザーの取得
             Model model) {
 
-        Page<Task> taskPage = taskService.getTasks(userDetails, page, filter, keyword, sort);
+        Page<Task> taskPage = taskService.getTasks(userDetails, page, status, keyword, sort);
 
         // Thymeleafに渡すデータをモデルに格納
         model.addAttribute("taskPage", taskPage);                // Pageオブジェクトごと渡す
@@ -50,7 +50,7 @@ public class TaskController {
 
         // 現在の条件をURLパラメータ維持のためにモデルに保持
         model.addAttribute("currentPage", page);
-        model.addAttribute("currentStatus", filter);
+        model.addAttribute("currentStatus", status);
         model.addAttribute("currentSortType", sort);
         model.addAttribute("currentKeyword", keyword);
         model.addAttribute("task", new Task());
@@ -64,7 +64,7 @@ public class TaskController {
             BindingResult bindingResult,
             Model model,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "all") String filter, // 大文字小文字のズレを防ぐため小文字推奨（コントローラーのデフォルト値に合わせる）
+            @RequestParam(defaultValue = "all") String status, // 大文字小文字のズレを防ぐため小文字推奨（コントローラーのデフォルト値に合わせる）
             @RequestParam(defaultValue = "") String keyword,
             @RequestParam(defaultValue = "deadline") String sort,
             @AuthenticationPrincipal SimpleUserDetails userDetails)// ★追加：ログインユーザーの取得
@@ -76,13 +76,13 @@ public class TaskController {
         if (bindingResult.hasErrors()) {
 
             // ★修正：一覧データの再取得時にも loginUser を渡す（4連動を維持するため）
-            Page<Task> taskPage = taskService.getTasks(userDetails, page, filter, keyword, sort);
+            Page<Task> taskPage = taskService.getTasks(userDetails, page, status, keyword, sort);
             model.addAttribute("taskPage", taskPage);
             model.addAttribute("taskList", taskPage.getContent());
 
             // URLパラメータ維持のためのデータも詰め直す
             model.addAttribute("currentPage", page);
-            model.addAttribute("currentStatus", filter);
+            model.addAttribute("currentStatus", status);
             model.addAttribute("currentSortType", sort);
             model.addAttribute("currentKeyword", keyword);
 
@@ -96,7 +96,7 @@ public class TaskController {
         taskService.saveTask(task);
 
         model.addAttribute("currentPage", page);
-        model.addAttribute("currentStatus", filter);
+        model.addAttribute("currentStatus", status);
         model.addAttribute("currentSortType", sort);
         model.addAttribute("currentKeyword", keyword);
 
@@ -105,7 +105,7 @@ public class TaskController {
             encodedKeyword = URLEncoder.encode(keyword, StandardCharsets.UTF_8);
         }
 
-        return "redirect:/tasks?page=" + page + "&filter=" + filter + "&sort=" + sort + "&keyword=" + encodedKeyword;
+        return "redirect:/tasks?page=" + page + "&status=" + status + "&sort=" + sort + "&keyword=" + encodedKeyword;
     }
 
     // 3.タスクを削除する
@@ -113,7 +113,7 @@ public class TaskController {
     public String deleteTask(@PathVariable Long id,
                              @RequestParam(defaultValue = "0") int page,
                              @RequestParam(value = "keyword", required = false) String keyword,
-                             @RequestParam(value = "filter", required = false) String filter,
+                             @RequestParam(value = "status", required = false) String status,
                              @RequestParam(value = "sort", required = false) String sort,
                              @AuthenticationPrincipal SimpleUserDetails userDetails,
                              RedirectAttributes redirectAttributes) {
@@ -123,7 +123,7 @@ public class TaskController {
             redirectAttributes.addFlashAttribute("errorMessage", "該当の情報が見つかりません。");
             redirectAttributes.addAttribute("page", page);
             if (keyword != null) redirectAttributes.addAttribute("keyword", keyword);
-            if (filter != null) redirectAttributes.addAttribute("filter", filter);
+            if (status != null) redirectAttributes.addAttribute("status", status);
             if (sort != null) redirectAttributes.addAttribute("sort", sort);
             return "redirect:/tasks";
         }
@@ -144,10 +144,21 @@ public class TaskController {
             redirectAttributes.addFlashAttribute("successMessage", "削除しました。");
         }
 
+        long remainingCount = taskService.countTasksByCondition(userDetails.getUser().getId(), keyword, status);
+        int pageSize = 5; // 1ページ5件ずつの仕様
+
+        // 最大ページ数（0開始）を計算。タスクが0件なら最大ページは0。
+        int maxPage = (remainingCount == 0) ? 0 : (int) ((remainingCount - 1) / pageSize);
+
+        // 要求されたページが、削除後の最大ページ数を超えていたら上書きする
+        if (page > maxPage) {
+            page = maxPage;
+        }
+
         // パラメータの維持ロジック
         redirectAttributes.addAttribute("page", page);
         if (keyword != null) redirectAttributes.addAttribute("keyword", keyword);
-        if (filter != null) redirectAttributes.addAttribute("filter", filter);
+        if (status != null) redirectAttributes.addAttribute("status", status);
         if (sort != null) redirectAttributes.addAttribute("sort", sort);
         return "redirect:/tasks";
     }
@@ -157,7 +168,7 @@ public class TaskController {
             @PathVariable("id") Long id,
             @RequestParam(value = "page", required = false, defaultValue = "0") int page,
             @RequestParam(value = "keyword", required = false) String keyword,
-            @RequestParam(value = "filter", required = false) String filter,
+            @RequestParam(value = "status", required = false) String status,
             @RequestParam(value = "sort", required = false) String sort,
             @AuthenticationPrincipal SimpleUserDetails userDetails, // 1. ログインユーザーを取得
             RedirectAttributes redirectAttributes,                  // 2. フラッシュメッセージ用
@@ -169,7 +180,7 @@ public class TaskController {
             redirectAttributes.addFlashAttribute("errorMessage", "該当の情報が見つかりません。");
             redirectAttributes.addAttribute("page", page);
             if (keyword != null) redirectAttributes.addAttribute("keyword", keyword);
-            if (filter != null) redirectAttributes.addAttribute("filter", filter);
+            if (status != null) redirectAttributes.addAttribute("status", status);
             if (sort != null) redirectAttributes.addAttribute("sort", sort);
             return "redirect:/tasks";
         }
@@ -189,7 +200,7 @@ public class TaskController {
             // 4. 現行のパラメータ（検索・ソート・フィルター・ページ）を維持して一覧へリダイレクト
             redirectAttributes.addAttribute("page", page);
             if (keyword != null) redirectAttributes.addAttribute("keyword", keyword);
-            if (filter != null) redirectAttributes.addAttribute("filter", filter);
+            if (status != null) redirectAttributes.addAttribute("status", status);
             if (sort != null) redirectAttributes.addAttribute("sort", sort);
 
             return "redirect:/tasks"; // 一覧画面のパス（環境に合わせて調整してください）
@@ -199,7 +210,7 @@ public class TaskController {
         model.addAttribute("task", task);
         model.addAttribute("currentPage", page);
         model.addAttribute("returnKeyword", keyword);
-        model.addAttribute("returnFilter", filter);
+        model.addAttribute("returnStatus", status);
         model.addAttribute("returnSort", sort);
 
         return "task-edit";
@@ -212,7 +223,7 @@ public class TaskController {
             @Validated @ModelAttribute("task") Task task, // @Validated がついているか確認
             BindingResult bindingResult,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "all") String filter,
+            @RequestParam(defaultValue = "all") String status,
             @RequestParam(defaultValue = "") String keyword,
             @RequestParam(defaultValue = "deadline") String sort,
             @AuthenticationPrincipal SimpleUserDetails userDetails,
@@ -225,7 +236,7 @@ public class TaskController {
 
             // URLパラメータ（検索・ソート・フィルター状態）を画面の「キャンセル」ボタン等に引き継ぐためにModelに保持
             model.addAttribute("currentPage", page);
-            model.addAttribute("currentStatus", filter);
+            model.addAttribute("currentStatus", status);
             model.addAttribute("currentSortType", sort);
             model.addAttribute("currentKeyword", keyword);
 
@@ -236,7 +247,7 @@ public class TaskController {
         // セキュリティブロック：DBから変更前の既存タスクを取得して所有権をチェック
         Task existingTask = taskService.getTaskById(id);
         if (existingTask == null) {
-            return "redirect:/tasks?page=" + page + "&filter=" + filter + "&keyword=" + keyword + "&sort=" + sort;
+            return "redirect:/tasks?page=" + page + "&status=" + status + "&keyword=" + keyword + "&sort=" + sort;
         }
         // 1. 管理者チェック
         boolean isAdmin = userDetails.getAuthorities().stream()
@@ -247,7 +258,7 @@ public class TaskController {
 
         if (!isAdmin && !isOwner) {
             // 他人のタスク、または存在しないタスクの場合は拒否して一覧へ戻す
-            return "redirect:/tasks?page=" + page + "&filter=" + filter + "&keyword=" + keyword + "&sort=" + sort;
+            return "redirect:/tasks?page=" + page + "&status=" + status + "&keyword=" + keyword + "&sort=" + sort;
         }
 
         // 3. 【最重要】送信されてきたtaskオブジェクトに、ログインユーザー情報をセットしてnullを解消
@@ -263,7 +274,7 @@ public class TaskController {
             encodedKeyword = URLEncoder.encode(keyword, StandardCharsets.UTF_8);
         }
         // リダイレクト先にも現在のページや検索条件を引き継ぐ
-        return "redirect:/tasks?page=" + page + "&filter=" + filter + "&sort=" + sort + "&keyword=" + encodedKeyword;
+        return "redirect:/tasks?page=" + page + "&status=" + status + "&sort=" + sort + "&keyword=" + encodedKeyword;
     }
 
     // 6.完了フラグをONにする
@@ -271,7 +282,7 @@ public class TaskController {
     public String completeTask(@PathVariable Long id,
                                @RequestParam(value = "page", required = false) int page,
                                @RequestParam(value = "keyword", required = false) String keyword,
-                               @RequestParam(value = "filter", required = false) String filter,
+                               @RequestParam(value = "status", required = false) String status,
                                @RequestParam(value = "sort", required = false) String sort,
                                @AuthenticationPrincipal SimpleUserDetails userDetails, // 認証情報の取得
                                RedirectAttributes redirectAttributes) {
@@ -279,13 +290,13 @@ public class TaskController {
         // 状態維持パラメータを事前にセット
         redirectAttributes.addAttribute("page", page);
         redirectAttributes.addAttribute("keyword", keyword);
-        redirectAttributes.addAttribute("filter", filter);
+        redirectAttributes.addAttribute("status", status);
         redirectAttributes.addAttribute("sort", sort);
 
         // セキュリティブロック：DBから変更前の既存タスクを取得して所有権をチェック
         Task existingTask = taskService.getTaskById(id);
         if (existingTask == null) {
-            return "redirect:/tasks?page=" + page + "&filter=" + filter + "&keyword=" + keyword + "&sort=" + sort;
+            return "redirect:/tasks?page=" + page + "&status=" + status + "&keyword=" + keyword + "&sort=" + sort;
         }
         // 1. 管理者チェック
         boolean isAdmin = userDetails.getAuthorities().stream()
@@ -305,15 +316,31 @@ public class TaskController {
         taskService.completeTask(id);
         redirectAttributes.addFlashAttribute("successMessage", "ステータスを完了にしました。");
 
+        long remainingCount = taskService.countTasksByCondition(userDetails.getUser().getId(), keyword, status);
+        int pageSize = 5; // 1ページ5件ずつの仕様
+
+        // 最大ページ数（0開始）を計算。タスクが0件なら最大ページは0。
+        int maxPage = (remainingCount == 0) ? 0 : (int) ((remainingCount - 1) / pageSize);
+
+        // 要求されたページが、削除後の最大ページ数を超えていたら上書きする
+        if (page > maxPage) {
+            page = maxPage;
+        }
+
+        // 🌟【修正】確定した安全なpage数をリダイレクト属性にセットする
+        redirectAttributes.addAttribute("page", page);
+        redirectAttributes.addAttribute("keyword", keyword);
+        redirectAttributes.addAttribute("status", status);
+        redirectAttributes.addAttribute("sort", sort);
         return "redirect:/tasks";
     }
-    // タスクの一括削除
+    // 7.タスクの一括削除
     @PostMapping("/tasks/bulk-delete")
     public String bulkDeleteTasks(
             @RequestParam(value = "taskIds", required = false) List<Long> taskIds,
             @RequestParam(value = "page", required = false) int page,
             @RequestParam(value = "keyword", required = false) String keyword,
-            @RequestParam(value = "filter", defaultValue = "ALL") String filter,
+            @RequestParam(value = "status", defaultValue = "ALL") String status,
             @RequestParam(value = "sort", defaultValue = "deadline") String sort,
             @AuthenticationPrincipal SimpleUserDetails userDetails, // 認証情報の取得
             RedirectAttributes redirectAttributes) {
@@ -321,7 +348,7 @@ public class TaskController {
         // 状態維持パラメータを事前にセット（RedirectAttributesが自動でURLエンコードを行うため手動エンコードは不要）
         redirectAttributes.addAttribute("page", page);
         redirectAttributes.addAttribute("keyword", keyword);
-        redirectAttributes.addAttribute("filter", filter);
+        redirectAttributes.addAttribute("status", status);
         redirectAttributes.addAttribute("sort", sort);
 
         // 1. チェックボックスが選択されているか確認
@@ -356,6 +383,25 @@ public class TaskController {
         // 4. すべてのタスクの権限チェックを通過した場合のみ削除処理を実行
         taskService.deleteTasks(taskIds);
         redirectAttributes.addFlashAttribute("successMessage", taskIds.size() + "件のタスクを一括削除しました。");
+
+        // 【追加】削除後の残りタスク件数に基づいてページ数を補正する
+        // ※ service側のメソッド名や引数は、お使いの環境（キーワードやフィルターの考慮状況）に合わせて調整してください。
+        long remainingCount = taskService.countTasksByCondition(userDetails.getUser().getId(), keyword, status);
+        int pageSize = 5; // 1ページ5件ずつの仕様
+
+        // 最大ページ数（0開始）を計算。タスクが0件なら最大ページは0。
+        int maxPage = (remainingCount == 0) ? 0 : (int) ((remainingCount - 1) / pageSize);
+
+        // 要求されたページが、削除後の最大ページ数を超えていたら上書きする
+        if (page > maxPage) {
+            page = maxPage;
+        }
+
+        // 🌟【修正】確定した安全なpage数をリダイレクト属性にセットする
+        redirectAttributes.addAttribute("page", page);
+        redirectAttributes.addAttribute("keyword", keyword);
+        redirectAttributes.addAttribute("status", status);
+        redirectAttributes.addAttribute("sort", sort);
 
         return "redirect:/tasks";
     }
