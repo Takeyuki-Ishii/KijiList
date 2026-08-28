@@ -268,6 +268,14 @@ public class TaskController {
         task.setCreatedAt(existingTask.getCreatedAt());
         // エラーがなければ正常に更新処理を行ってリダイレクト
         taskService.saveTask(task);
+        long remainingCount = taskService.countTasksByCondition(userDetails.getUser().getId(), keyword, status);
+        int pageSize = 5; // 1ページ5件ずつの仕様
+
+        // 最大ページ数（0開始）を計算。タスクが0件なら最大ページは0。
+        int maxPage = (remainingCount == 0) ? 0 : (int) ((remainingCount - 1) / pageSize);
+
+        // 要求されたページが、削除後の最大ページ数を超えていたら上書きする
+        if (page > maxPage) { page = maxPage; }
         String encodedKeyword = "";
         if (keyword != null && !keyword.trim().isEmpty()) {
             // 「作業」を「%E4%BD%9C%E6%A5%AD」のような形式に安全に変換します
@@ -323,9 +331,7 @@ public class TaskController {
         int maxPage = (remainingCount == 0) ? 0 : (int) ((remainingCount - 1) / pageSize);
 
         // 要求されたページが、削除後の最大ページ数を超えていたら上書きする
-        if (page > maxPage) {
-            page = maxPage;
-        }
+        if (page > maxPage) { page = maxPage; }
 
         // 🌟【修正】確定した安全なpage数をリダイレクト属性にセットする
         redirectAttributes.addAttribute("page", page);
@@ -393,9 +399,7 @@ public class TaskController {
         int maxPage = (remainingCount == 0) ? 0 : (int) ((remainingCount - 1) / pageSize);
 
         // 要求されたページが、削除後の最大ページ数を超えていたら上書きする
-        if (page > maxPage) {
-            page = maxPage;
-        }
+        if (page > maxPage) {page = maxPage; }
 
         // 🌟【修正】確定した安全なpage数をリダイレクト属性にセットする
         redirectAttributes.addAttribute("page", page);
