@@ -100,12 +100,12 @@
             <div class="btn-group" role="group" aria-label="Sort options">
                 <!-- 期限順ボタン -->
                 <a th:href="@{/tasks(sort='deadline', status=${currentStatus}, keyword=${currentKeyword})}"
-                   th:classappend="${currentSort == 'deadline'} ? 'btn-success' : 'btn-outline-success'"
+                   th:classappend="${currentSortType == 'deadline'} ? 'btn-success' : 'btn-outline-success'"
                    class="btn fw-bold btn-outline-primary">📅 期限が近い順</a>
 
                 <!-- 重要度順ボタン -->
                 <a th:href="@{/tasks(status=${currentStatus}, sort='priority', keyword=${currentKeyword})}"
-                   th:classappend="${currentSort == 'priority'} ? 'active' : ''"
+                   th:classappend="${currentSortType == 'priority'} ? 'active' : ''"
                    class="btn btn-outline-dark btn-sm">🔥 重要度順</a>
             </div>
         </div>
@@ -115,7 +115,7 @@
                 <!-- 「前へ」ボタン（最初のページでは無効化） -->
                 <li class="page-item" th:classappend="${taskPage.first} ? 'disabled'">
                     <a class="page-item page-link"
-                       th:href="@{/tasks(page=${taskPage.number - 1}, status=${currentStatus}, keyword=${currentKeyword}, sortType=${currentSortType})}">
+                       th:href="@{/tasks(page=${taskPage.number - 1}, status=${currentStatus}, keyword=${currentKeyword}, sort=${currentSortType})}">
                         前へ
                     </a>
                 </li>
@@ -125,14 +125,14 @@
                     th:each="i : ${#numbers.sequence(0, taskPage.totalPages - 1)}"
                     th:classappend="${i == taskPage.number} ? 'active'">
                     <a class="page-link"
-                       th:href="@{/tasks(page=${i}, status=${currentStatus}, keyword=${currentKeyword}, sortType=${currentSortType})}"
+                       th:href="@{/tasks(page=${i}, status=${currentStatus}, keyword=${currentKeyword}, sort=${currentSortType})}"
                        th:text="${i + 1}">1</a>
                 </li>
 
                 <!-- 「次へ」ボタン（最後のページでは無効化） -->
                 <li class="page-item" th:classappend="${taskPage.last} ? 'disabled'">
                     <a class="page-link"
-                       th:href="@{/tasks(page=${taskPage.number + 1}, status=${currentStatus}, keyword=${currentKeyword}, sortType=${currentSortType})}">
+                       th:href="@{/tasks(page=${taskPage.number + 1}, status=${currentStatus}, keyword=${currentKeyword}, sort=${currentSortType})}">
                         次へ
                     </a>
                 </li>
