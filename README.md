@@ -7,9 +7,13 @@
 完了ボタンの押下や、入力値バリデーションエラーが発生した場合でも、ユーザーが選択していた表示条件（ページ番号や検索ワードなど）が崩れることなく、ストレスのない操作性を実現しています。
 
 ---
-## URL
-     `[https://my-task-app-hrkt.onrender.com/](https://my-task-app-hrkt.onrender.com/)`
+## 🌐 デモサイト（公開URL）
 
+[![Deployed on Render](https://shields.io)](https://my-task-app-hrkt.onrender.com/)
+
+👉 [ここをクリックしてデモサイトを開く](https://my-task-app-hrkt.onrender.com/)
+
+---
 ## 🚀 主な機能
 1. **タスク一覧表示**：期限が近い順 / 重要度順に自動ソート
 2. **高度な条件絞り込み＆検索**：
@@ -26,10 +30,11 @@
     - 一括削除機能 / `@PathVariable` を用いた個別削除機能
 5. **入力値バリデーション**：
     - 新規登録・編集時、エラー箇所にBootstrapの `is-invalid` を用いた赤文字警告を表示
+
 ---
 
 ## 🛠️ 技術スタック
-- **バックエンド**: Java 17 / Spring Boot 3.x
+- **バックエンド**: Java 21 / Spring Boot 3.x
 - **フロントエンド**: HTML5 / Thymeleaf / Bootstrap 5
 - **データベース**:
     - ローカル環境: H2 Database（インメモリ）
@@ -56,7 +61,7 @@
 ### 起動手順
 1. 本リポジトリをクローンします。
    ```bash
-   git clone <あなたのGitHubリポジトリのURL>
+   git clone https://github.com/Takeyuki-Ishii/KijiList
    ```
 2. プロジェクトのルートディレクトリに移動します。
    ```bash
