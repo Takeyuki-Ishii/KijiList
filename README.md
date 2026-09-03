@@ -7,7 +7,10 @@
 
 [![Deployed on Render](https://shields.io)](https://my-task-app-hrkt.onrender.com/)
 
-👉 [ここをクリックしてデモサイトを開く](https://my-task-app-hrkt.onrender.com/)
+👉 [ここをクリックしてデモサイトを開く](https://my-task-app-hrkt.onrender.com/login)
+
+※Renderサービスの都合上、一度サイトにアクセスしてからシステムが起動する仕組みになっており、起動までに3～4分程度時間がかかります。
+すぐにログイン画面が表示されない場合は、一度アクセスしてから4～5分程度経過してから再度アクセスしてください。
 
 ※初めて利用する方は「新規会員登録はこちら」から自分用のアカウントを登録してください。
 
