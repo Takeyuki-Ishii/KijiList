@@ -27,7 +27,7 @@
                     <input type="text" th:field="*{name}"
                            maxlength="50"
                            th:classappend="${#fields.hasErrors('name')} ? 'is-invalid' : ''"
-                           class="form-control" placeholder="例：風景写真の記事">
+                           class="form-control" placeholder="例：スーパーで牛乳の購入">
                 </label>
                 <!-- ★ エラーメッセージ表示エリア -->
                 <div th:if="${#fields.hasErrors('name')}"
